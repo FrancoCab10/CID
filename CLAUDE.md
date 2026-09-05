@@ -65,10 +65,9 @@ the user explicitly changes one.
 
 ## Feature decisions (not yet implemented)
 
-1. `CID.connect(...)` returns a fresh, independent instance every call. The
-   old BinDB shared one global instance, so a second `connect()` silently
-   clobbered the first. Independent instances let a project split data
-   across multiple files, e.g. `loot.db`, `config.db`, `libs.db`.
+1. `CID.connect(...)` returns a fresh, independent instance every call, so a
+   project can split its data across multiple files, e.g. `loot.db`,
+   `config.db`, `libs.db`, at the same time.
 2. A Drizzle-inspired fluent query builder replaces one-shot helpers like the
    old `fetchBy(table, key, value)`, so filtering on more than one condition
    is possible.
@@ -78,8 +77,8 @@ the user explicitly changes one.
    not just a flat left-to-right chain.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
    relate tables by storing IDs and issuing multiple queries.
-6. `update`/`delete` operate on row IDs (via `uuid.src`), not array index —
-   the old implementation indexed by array position, which shifts on delete.
+6. `update`/`delete` operate on row IDs (via `uuid.src`), not array index,
+   since array position shifts whenever a row is deleted.
 7. Queries support `limit` and `offset`.
 8. Writes stay in RAM until `.write()` is called explicitly; a crash before
    that loses unsaved changes since last write. Accepted trade-off, not a bug

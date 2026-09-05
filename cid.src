@@ -12,9 +12,8 @@
 CID = {}
 
 /*
-* Creates a new, independent CID instance. Unlike the previous BinDB
-* implementation, every call returns its own instance, so multiple
-* databases can coexist in the same script.
+* Creates a new, independent CID instance. Every call returns its own
+* instance, so multiple databases can coexist in the same script.
 *
 * db_name string, database name, used as the file name
 * db_password string, password required to open the compiled binary

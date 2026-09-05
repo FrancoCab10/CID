@@ -22,7 +22,7 @@ At the top of your code, import `cid.src` with the `import_code` method.
 
 ### CID.connect(dbName, dbPassword, dbTables, dbPath)
 
-Creates and returns a new, independent database instance. Unlike the previous BinDB, every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time.
+Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time.
 
 Example Usage:
 
