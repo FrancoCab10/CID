@@ -113,6 +113,66 @@ Example Usage:
 
     mrRobotDb.printTable("users", {"name": "Name", "surname": "Surname"})
 
+### BinDB.count(table)
+
+Count the rows of a table
+
+Example Usage:
+
+    mrRobotDb.count("users")
+
+### BinDB.join(tableA, tableB, keyA, keyB, type)
+
+Join two tables on a key (nested-loop join). `keyB` defaults to `keyA`, `type` defaults to `"inner"` (only matching rows); pass `"left"` to also keep unmatched rows from `tableA`. Matching rows are merged into a single map whose keys are prefixed with the table name to avoid collisions.
+
+Example Usage:
+
+    mrRobotDb.join("users", "mails", "id", "userId")
+
+    // returns something like:
+    // [{"users.id": 1, "users.name": "Elliot", "mails.userId": 1, "mails.address": "elliot@ecorp.com"}]
+
+### BinDB.query(table)
+
+Start a SQL-like fluent query on a table. Returns a `BinDBQuery` you chain conditions/ordering/pagination onto, then run with a terminal method.
+
+**Where clauses**
+
+- `.where(key, value)` / `.where(key, operator, value)` — AND condition. Supported operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `like`, `in`, `between`
+- `.orWhere(key, [operator,] value)` — OR condition
+- `.whereLike(key, pattern)` — SQL-style `LIKE`, `%` as wildcard (`"%foo"`, `"foo%"`, `"%foo%"`), case-insensitive
+- `.whereIn(key, values)` — matches if the key's value is in the given list
+- `.whereBetween(key, min, max)` — inclusive range
+
+Conditions are evaluated left to right in the order they were added (no parenthesis grouping), same as chaining `where`/`orWhere` in most query builders.
+
+**Ordering & pagination**
+
+- `.orderBy(key, direction)` — `direction` is `"asc"` (default) or `"desc"`
+- `.limit(n)` / `.offset(n)`
+
+**Terminal methods**
+
+- `.get()` / `.all()` — run the query, return matching rows
+- `.first()` — run the query, return the first matching row (or `null`)
+- `.count()` — number of matching rows (ignores `orderBy`/`limit`/`offset`)
+- `.sum(key)` / `.avg(key)` / `.min(key)` / `.max(key)` — aggregate over matching rows
+- `.distinct(key)` — unique values of a key over matching rows
+- `.update(data)` — merges `data` into every matching row (unlike `BinDB.update`, it does not replace the whole row). Returns the number of affected rows
+- `.delete()` — removes every matching row. Returns the number of affected rows
+
+Example Usage:
+
+    adults = mrRobotDb.query("users").where("age", ">=", 18).orderBy("name").limit(10).get()
+
+    elliot = mrRobotDb.query("users").whereLike("name", "%elliot%").first()
+
+    affected = mrRobotDb.query("users").where("surname", "Alderson").update({"surname": "Robot"})
+
+    removed = mrRobotDb.query("users").where("name", "Gideon").delete()
+
+    total = mrRobotDb.query("users").count()
+
 ### Methods chain
 
 For your convenience you can chain the methods if you want
@@ -144,9 +204,9 @@ Upload only the binary of your program or make sure you have the right permissio
 
 ## Next Goals:
 
-- JOIN method to join between two or more tables
-- LIKE method to search a value in a row
 - Terminal GUI to explore your database in your terminal and perform queries directly from it
+- Raw SQL-like string queries (e.g. `db.sql("SELECT * FROM users WHERE age > 18")`)
+- Parenthesis grouping for where/orWhere conditions
 
 ## License
 

@@ -1,6 +1,6 @@
 // BinDB
 // author: tuonux
-// version: 1.0.0
+// version: 1.1.0
 // 
 // repository:              https://github.com/tuonux/gh-bindb
 // documentation:           https://github.com/tuonux/gh-bindb/README.md
@@ -270,4 +270,372 @@ BinDB.printTable = function(table="", labels = {})
     end for
     print(format_columns(out.join("\n")))
     return self
+end function
+//
+// Count the rows of a table
+//
+// table:   a string with the name of the table that to want to count
+//
+// Example Usage:
+//
+// mrRobotDb.count("users")
+//
+BinDB.count = function(table="")
+    if self.tables.indexes.indexOf(table) == null then return print("Table " + table + " not found")
+    return self.tables[table].len
+end function
+//
+// Join two tables on a key (nested-loop inner/left join)
+//
+// tableA:  left table name
+// tableB:  right table name
+// keyA:    key of tableA used for the join comparison
+// keyB:    key of tableB used for the join comparison. Default: same as keyA
+// type:    "inner" (default, only matching rows) or "left" (keep unmatched tableA rows)
+//
+// Example Usage:
+//
+// mrRobotDb.join("users", "mails", "id", "userId")
+//
+// then returns a list of maps with keys prefixed by table name, example:
+//
+// [{"users.id": 1, "users.name": "Elliot", "mails.userId": 1, "mails.address": "elliot@ecorp.com"}]
+//
+BinDB.join = function(tableA="", tableB="", keyA="", keyB=null, type="inner")
+    if self.tables.indexes.indexOf(tableA) == null then return print("Table " + tableA + " not found")
+    if self.tables.indexes.indexOf(tableB) == null then return print("Table " + tableB + " not found")
+    if keyB == null then keyB = keyA
+    result = []
+    for rowA in self.tables[tableA]
+        matched = false
+        for rowB in self.tables[tableB]
+            if not rowA.hasIndex(keyA) or not rowB.hasIndex(keyB) then continue
+            if rowA[keyA] != rowB[keyB] then continue
+            matched = true
+            merged = {}
+            for k in rowA.indexes
+                merged[tableA + "." + k] = rowA[k]
+            end for
+            for k in rowB.indexes
+                merged[tableB + "." + k] = rowB[k]
+            end for
+            result.push(merged)
+        end for
+        if type == "left" and not matched then
+            merged = {}
+            for k in rowA.indexes
+                merged[tableA + "." + k] = rowA[k]
+            end for
+            result.push(merged)
+        end if
+    end for
+    return result
+end function
+//
+// Internal: evaluate a single where-condition against a row.
+// Supported operators: =, !=, >, <, >=, <=, like, in, between
+//
+BinDB._matchCondition = function(row, cond)
+    if not row.hasIndex(cond.key) then return false
+    v = row[cond.key]
+    op = cond.op
+    target = cond.value
+    if op == "=" then return v == target
+    if op == "!=" then return v != target
+    if op == ">" then return v > target
+    if op == "<" then return v < target
+    if op == ">=" then return v >= target
+    if op == "<=" then return v <= target
+    if op == "like" then return BinDB._matchLike(str(v), target)
+    if op == "in" then return target.indexOf(v) != null
+    if op == "between" then return v >= target[0] and v <= target[1]
+    return false
+end function
+//
+// Internal: SQL-style LIKE matching with "%" as wildcard.
+// Supported patterns: "%foo", "foo%", "%foo%", "foo" (exact, case-insensitive)
+//
+BinDB._matchLike = function(value, pattern)
+    value = value.lower()
+    pattern = pattern.lower()
+    startsWildcard = pattern.len > 0 and pattern[0] == "%"
+    endsWildcard = pattern.len > 0 and pattern[-1] == "%"
+    core = pattern
+    if startsWildcard then core = core[1:]
+    if endsWildcard and core.len > 0 then core = core[:-1]
+    if startsWildcard and endsWildcard then return value.indexOf(core) != null
+    if startsWildcard then return core.len <= value.len and value[value.len - core.len:] == core
+    if endsWildcard then return core.len <= value.len and value[:core.len] == core
+    return value == core
+end function
+//
+// SQL-like fluent query builder
+//
+// table:   a string with the name of the table you want to query
+//
+// Example Usage:
+//
+// results = mrRobotDb.query("users").where("age", ">=", 18).orderBy("name").limit(10).get()
+// row = mrRobotDb.query("users").where("name", "like", "%elliot%").first()
+// affected = mrRobotDb.query("users").where("surname", "Alderson").update({"surname": "Robot"})
+// removed = mrRobotDb.query("users").where("name", "Gideon").delete()
+//
+BinDB.query = function(table="")
+    if self.tables.indexes.indexOf(table) == null then return print("Table " + table + " not found")
+    q = new BinDBQuery
+    q.db = self
+    q.table = table
+    q.conditions = []
+    q.orderKey = null
+    q.orderDir = "asc"
+    q.limitVal = null
+    q.offsetVal = 0
+    return q
+end function
+//
+// BinDBQuery
+// instance returned by BinDB.query(), holds the state of a single query
+//
+BinDBQuery = {}
+//
+// Add an AND where-condition. Accepts either 2 args (key, value) for an
+// implicit "=" comparison, or 3 args (key, operator, value).
+//
+// Supported operators: =, !=, >, <, >=, <=, like, in, between
+//
+BinDBQuery.where = function(key="", op="=", value=null)
+    if value == null then
+        value = op
+        op = "="
+    end if
+    self.conditions.push({"key": key, "op": op, "value": value, "bool": "and"})
+    return self
+end function
+//
+// Add an OR where-condition. Same argument rules as where().
+// Conditions are evaluated left to right (no parenthesis grouping).
+//
+BinDBQuery.orWhere = function(key="", op="=", value=null)
+    if value == null then
+        value = op
+        op = "="
+    end if
+    self.conditions.push({"key": key, "op": op, "value": value, "bool": "or"})
+    return self
+end function
+//
+// Add an AND where-condition matching if the key value is in the given list
+//
+BinDBQuery.whereIn = function(key="", values=[])
+    self.conditions.push({"key": key, "op": "in", "value": values, "bool": "and"})
+    return self
+end function
+//
+// Add an AND where-condition matching a SQL-style LIKE pattern ("%" wildcard)
+//
+BinDBQuery.whereLike = function(key="", pattern="")
+    self.conditions.push({"key": key, "op": "like", "value": pattern, "bool": "and"})
+    return self
+end function
+//
+// Add an AND where-condition matching if the key value is between min and max (inclusive)
+//
+BinDBQuery.whereBetween = function(key="", min=0, max=0)
+    self.conditions.push({"key": key, "op": "between", "value": [min, max], "bool": "and"})
+    return self
+end function
+//
+// Order the results by a key. direction: "asc" (default) or "desc"
+//
+BinDBQuery.orderBy = function(key="", direction="asc")
+    self.orderKey = key
+    self.orderDir = direction
+    return self
+end function
+//
+// Limit the number of results returned
+//
+BinDBQuery.limit = function(n=0)
+    self.limitVal = n
+    return self
+end function
+//
+// Skip the first n results (applied before limit)
+//
+BinDBQuery.offset = function(n=0)
+    self.offsetVal = n
+    return self
+end function
+//
+// Internal: true/false whether a row satisfies the accumulated conditions
+//
+BinDBQuery._evalConditions = function(row)
+    if self.conditions.len == 0 then return true
+    keep = null
+    for cond in self.conditions
+        match = BinDB._matchCondition(row, cond)
+        if keep == null then
+            keep = match
+        else if cond.bool == "or" then
+            keep = keep or match
+        else
+            keep = keep and match
+        end if
+    end for
+    return keep
+end function
+//
+// Internal: rows matching the where-conditions, ignoring orderBy/limit/offset
+//
+BinDBQuery._filterOnly = function()
+    rows = self.db.tables[self.table]
+    result = []
+    for row in rows
+        if self._evalConditions(row) then result.push(row)
+    end for
+    return result
+end function
+//
+// Internal: full pipeline, filter + orderBy + offset + limit
+//
+BinDBQuery._execute = function()
+    result = self._filterOnly()
+    if self.orderKey != null then
+        result.sort(self.orderKey)
+        if self.orderDir == "desc" then
+            reversed = []
+            i = result.len - 1
+            while i >= 0
+                reversed.push(result[i])
+                i = i - 1
+            end while
+            result = reversed
+        end if
+    end if
+    if self.offsetVal > 0 then
+        sliced = []
+        i = self.offsetVal
+        while i < result.len
+            sliced.push(result[i])
+            i = i + 1
+        end while
+        result = sliced
+    end if
+    if self.limitVal != null then result = result[:self.limitVal]
+    return result
+end function
+//
+// Run the query and return the matching rows
+//
+BinDBQuery.get = function()
+    return self._execute()
+end function
+BinDBQuery.all = function()
+    return self._execute()
+end function
+//
+// Run the query and return only the first matching row (or null)
+//
+BinDBQuery.first = function()
+    result = self._execute()
+    if result.len == 0 then return null
+    return result[0]
+end function
+//
+// Count the rows matching the where-conditions (ignores orderBy/limit/offset)
+//
+BinDBQuery.count = function()
+    return self._filterOnly().len
+end function
+//
+// Sum/average/min/max of a numeric key over the rows matching the where-conditions
+//
+BinDBQuery.sum = function(key="")
+    rows = self._filterOnly()
+    total = 0
+    for row in rows
+        if row.hasIndex(key) then total = total + row[key]
+    end for
+    return total
+end function
+BinDBQuery.avg = function(key="")
+    rows = self._filterOnly()
+    if rows.len == 0 then return 0
+    return self.sum(key) / rows.len
+end function
+BinDBQuery.min = function(key="")
+    rows = self._filterOnly()
+    if rows.len == 0 then return null
+    m = null
+    for row in rows
+        if not row.hasIndex(key) then continue
+        if m == null or row[key] < m then m = row[key]
+    end for
+    return m
+end function
+BinDBQuery.max = function(key="")
+    rows = self._filterOnly()
+    if rows.len == 0 then return null
+    m = null
+    for row in rows
+        if not row.hasIndex(key) then continue
+        if m == null or row[key] > m then m = row[key]
+    end for
+    return m
+end function
+//
+// Distinct values of a key over the rows matching the where-conditions
+//
+BinDBQuery.distinct = function(key="")
+    rows = self._filterOnly()
+    seen = []
+    result = []
+    for row in rows
+        if not row.hasIndex(key) then continue
+        v = row[key]
+        if seen.indexOf(v) == null then
+            seen.push(v)
+            result.push(v)
+        end if
+    end for
+    return result
+end function
+//
+// Bulk-update the rows matching the where-conditions. Merges the given data
+// into each matching row (unlike BinDB.update, which replaces the whole row).
+// Returns the number of affected rows.
+//
+BinDBQuery.update = function(data=null)
+    if not data or typeof(data) != "map" then return print("data must be a map")
+    rows = self.db.tables[self.table]
+    affected = 0
+    i = 0
+    while i < rows.len
+        if self._evalConditions(rows[i]) then
+            for k in data.indexes
+                rows[i][k] = data[k]
+            end for
+            affected = affected + 1
+        end if
+        i = i + 1
+    end while
+    return affected
+end function
+//
+// Bulk-delete the rows matching the where-conditions.
+// Returns the number of affected rows.
+//
+BinDBQuery.delete = function()
+    rows = self.db.tables[self.table]
+    kept = []
+    affected = 0
+    for row in rows
+        if self._evalConditions(row) then
+            affected = affected + 1
+        else
+            kept.push(row)
+        end if
+    end for
+    self.db.tables[self.table] = kept
+    return affected
 end function

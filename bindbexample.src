@@ -48,6 +48,22 @@ print("<color=green>Print a graphic table and apply a label to the keys")
 
 mrRobotDb.printTable("users", {"name": "Name", "surname": "Surname"})
 
+print("<color=green>SQL-like query builder: where + orderBy")
+
+for user in mrRobotDb.query("users").where("surname", "like", "%o%").orderBy("name").get()
+    print(user)
+end for
+
+print("<color=green>SQL-like query builder: first + count")
+
+print(mrRobotDb.query("users").where("name", "Tyrell").first())
+print(mrRobotDb.count("users"))
+
+print("<color=green>SQL-like query builder: bulk update and delete by condition")
+
+mrRobotDb.query("users").where("name", "Angela").update({"surname": "Moss-Krista"})
+mrRobotDb.query("users").where("name", "Joanna").delete()
+
 // If eveerthing works correcty, this is the result:")
 // 
 // #    Name        Surname
