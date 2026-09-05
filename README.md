@@ -10,4 +10,4 @@ CID is being built as the main database layer for Smoke, a spy-themed all-in-one
 
 ## Status
 
-This repository is being rewritten from the ground up. The previous BinDB-derived implementation is preserved as-is on the [`old_base`](https://github.com/FrancoCab10/gh-bindb/tree/old_base) branch for reference. The new implementation, API, and docs will land here incrementally.
+This repository is being rewritten from the ground up. The previous BinDB-derived implementation is preserved as-is on the [`original_base`](https://github.com/FrancoCab10/CID/tree/original_base) branch for reference. The new implementation, API, and docs will land here incrementally.
