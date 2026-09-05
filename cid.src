@@ -1,22 +1,26 @@
-// CID (Central Intelligence Database)
-// version: 0.1.0
-//
-// A GreyScript database library for Grey Hack.
-// repository: https://github.com/FrancoCab10/CID
-//
-// Import with:
-// import_code("/path/to/cid.src")
+/*
+* CID (Central Intelligence Database)
+* version: 0.1.0
+*
+* A GreyScript database library for Grey Hack.
+* repository: https://github.com/FrancoCab10/CID
+*
+* Import with: import_code("/path/to/cid.src")
+*/
 
 CID = {}
 
-// Creates a new, independent CID instance. Unlike the previous BinDB
-// implementation, every call returns its own instance, so multiple
-// databases can coexist in the same script.
-//
-// db_name:      database name, used as the file name
-// db_password:  password required to open the compiled binary
-// db_tables:    list of table names to initialize
-// db_path:      directory to store the database in. Defaults to current_path
+/*
+* Creates a new, independent CID instance. Unlike the previous BinDB
+* implementation, every call returns its own instance, so multiple
+* databases can coexist in the same script.
+*
+* db_name string, database name, used as the file name
+* db_password string, password required to open the compiled binary
+* db_tables list, table names to initialize
+* db_path string, directory to store the database in. Defaults to current_path
+* Return CID
+*/
 CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], db_path="")
         instance = new CID
         instance.name = db_name

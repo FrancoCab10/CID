@@ -33,13 +33,27 @@ the user explicitly changes one.
 
 ## Comments
 
-- Document public functions with a block comment: purpose and params, brief
-  and factual. Grey Hack enforces a per-file character limit — no verbose
-  prose, no inline "example output" transcripts (those belong in the
-  README/demo file, not `cid.src`).
+- Document public functions with a `/* */` block comment directly above the
+  function:
+
+  ```
+  /*
+  * short explanation
+  *
+  * param_name type
+  * param_name type
+  * Return type
+  *
+  * some examples if needed
+  */
+  ```
+
+- Keep it brief and factual — no verbose prose, no inline "example output"
+  transcripts (Grey Hack enforces a per-file character limit; full examples
+  belong in the README/demo file, not `cid.src`).
 - Don't comment what the code already says.
-- Single-line comments are fine but rare — only when something genuinely
-  needs clarifying, and explain the *why*, not the *what*.
+- `//` single-line comments are fine but rare — only when something
+  genuinely needs clarifying, and explain the *why*, not the *what*.
 
 ## Workflow
 
