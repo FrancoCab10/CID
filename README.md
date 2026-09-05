@@ -6,7 +6,7 @@ It started as a from-scratch rewrite of [BinDB](https://github.com/tuonux/gh-bin
 
 ## Why this exists
 
-CID is being built as the main database layer for Smoke, a spy-themed all-in-one hacking tool for Grey Hack. That said, CID is developed as its own standalone, plug-and-play library: it has no dependency on Smoke and can be dropped into any GreyScript project, yours or someone else's.
+CID is being built as the main database layer for Smoke, a spy-themed all-in-one hacking tool for Grey Hack. That said, CID is developed as its own standalone, plug-and-play library: it has no dependency on Smoke and can be dropped into any GreyScript project.
 
 ## Status
 
