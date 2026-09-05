@@ -36,3 +36,20 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         end for
         return instance
 end function
+
+/*
+* Inserts a new row into a table. Stores a shallow copy of data with a
+* fresh uuid assigned to its id field, overwriting any id the caller set.
+*
+* table string, name of the table to insert into
+* data map, the row to insert
+* Return CID
+*/
+CID.insert = function(table, data)
+        if not self.tables.hasIndex(table) then return print("Table " + table + " not found")
+        if typeof(data) != "map" then return print("data must be a map")
+        row = {} + data
+        row.id = uuid()
+        self.tables[table].push(row)
+        return self
+end function

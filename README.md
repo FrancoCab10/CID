@@ -14,9 +14,10 @@ This repository is being rewritten from the ground up, one small testable piece 
 
 ## How to use it
 
-At the top of your code, import `cid.src` with the `import_code` method.
+At the top of your code, import `uuid.src` and `cid.src` with the `import_code` method.
 
 ```
+import_code("/absolute/path/of/uuid.src")
 import_code("/absolute/path/of/cid.src")
 ```
 
@@ -31,4 +32,14 @@ Example Usage:
 ```
 lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
 configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
+```
+
+### CID.insert(table, data)
+
+Inserts a new row into a table. A fresh id is generated for the row, overwriting any `id` present in `data`, so rows can later be looked up, updated, or deleted by id.
+
+Example Usage:
+
+```
+lootDb.insert("items", {"name": "lockpick", "quantity": 3})
 ```

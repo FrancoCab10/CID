@@ -63,7 +63,7 @@ the user explicitly changes one.
   in-game before the next feature builds on top of it — keep PRs scoped to
   one testable feature at a time.
 
-## Feature decisions (not yet implemented)
+## Feature decisions
 
 1. `CID.connect(...)` returns a fresh, independent instance every call, so a
    project can split its data across multiple files, e.g. `loot.db`,
@@ -86,5 +86,6 @@ the user explicitly changes one.
 
 ## Status
 
-No implementation yet. Only `README.md`, `LICENSE.md`, and this file exist at
-the repo root.
+Implemented so far, in `cid.src`: `CID.connect()`, `CID.insert()`. `uuid.src`
+is in the repo and provides the global `uuid()` function used to assign row
+ids. Everything else in the feature decisions above is still pending.
