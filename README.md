@@ -10,4 +10,25 @@ CID is being built as the main database layer for Smoke, a spy-themed all-in-one
 
 ## Status
 
-This repository is being rewritten from the ground up. The previous BinDB-derived implementation is preserved as-is on the [`original_base`](https://github.com/FrancoCab10/CID/tree/original_base) branch for reference. The new implementation, API, and docs will land here incrementally.
+This repository is being rewritten from the ground up, one small testable piece at a time. The previous BinDB-derived implementation is preserved as-is on the [`original_base`](https://github.com/FrancoCab10/CID/tree/original_base) branch for reference.
+
+## How to use it
+
+At the top of your code, import `cid.src` with the `import_code` method.
+
+```
+import_code("/absolute/path/of/cid.src")
+```
+
+## Available methods
+
+### CID.connect(dbName, dbPassword, dbTables, dbPath)
+
+Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time.
+
+Example Usage:
+
+```
+lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
+configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
+```
