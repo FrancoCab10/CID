@@ -16,7 +16,9 @@ This repository is being rewritten from the ground up, one small testable piece 
 
 At the top of your code, import `cid.src` with the `import_code` method.
 
-    import_code("/absolute/path/of/cid.src")
+```
+import_code("/absolute/path/of/cid.src")
+```
 
 ## Available methods
 
@@ -26,5 +28,7 @@ Creates and returns a new, independent database instance. Every call returns its
 
 Example Usage:
 
-    lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
-    configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
+```
+lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
+configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
+```
