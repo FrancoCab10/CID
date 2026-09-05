@@ -34,12 +34,13 @@ lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
 configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
 ```
 
-### CID.insert(table, data)
+### CID.insert(table)
 
-Inserts a new row into a table. A fresh id is generated for the row, overwriting any `id` present in `data`, so rows can later be looked up, updated, or deleted by id.
+Starts an insert builder for a table. Chain `.values(data)` to set the row, then `.execute()` to run it and get back the inserted row. A fresh id is generated for the row, overwriting any `id` present in `data`, so rows can later be looked up, updated, or deleted by id.
 
 Example Usage:
 
 ```
-lootDb.insert("items", {"name": "lockpick", "quantity": 3})
+item = lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
+print(item.id)
 ```

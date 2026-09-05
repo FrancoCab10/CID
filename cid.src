@@ -38,18 +38,47 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
 end function
 
 /*
-* Inserts a new row into a table. Stores a shallow copy of data with a
-* fresh uuid assigned to its id field, overwriting any id the caller set.
+* Starts an insert builder for a table. Chain .values(data) then
+* .execute() to run it.
 *
 * table string, name of the table to insert into
-* data map, the row to insert
-* Return CID
+* Return CIDInsert
 */
-CID.insert = function(table, data)
-        if not self.tables.hasIndex(table) then return print("Table " + table + " not found")
-        if typeof(data) != "map" then return print("data must be a map")
-        row = {} + data
-        row.id = uuid()
-        self.tables[table].push(row)
+CID.insert = function(table)
+        builder = new CIDInsert
+        builder.db = self
+        builder.table = table
+        builder.data = null
+        return builder
+end function
+
+/*
+* Builder returned by CID.insert(table).
+*/
+CIDInsert = {}
+
+/*
+* Sets the row to insert.
+*
+* data map, the row to insert
+* Return CIDInsert
+*/
+CIDInsert.values = function(data)
+        self.data = data
         return self
+end function
+
+/*
+* Runs the insert. Stores a shallow copy of data with a fresh uuid
+* assigned to its id field, overwriting any id the caller set.
+*
+* Return map, the inserted row
+*/
+CIDInsert.execute = function()
+        if not self.db.tables.hasIndex(self.table) then return print("Table " + self.table + " not found")
+        if typeof(self.data) != "map" then return print("data must be a map")
+        row = {} + self.data
+        row.id = uuid()
+        self.db.tables[self.table].push(row)
+        return row
 end function

@@ -68,11 +68,16 @@ the user explicitly changes one.
 1. `CID.connect(...)` returns a fresh, independent instance every call, so a
    project can split its data across multiple files, e.g. `loot.db`,
    `config.db`, `libs.db`, at the same time.
-2. A Drizzle-inspired fluent query builder replaces one-shot helpers like the
-   old `fetchBy(table, key, value)`, so filtering on more than one condition
-   is possible.
+2. Every operation — insert, update, delete, and querying — follows the same
+   Drizzle-inspired builder shape: `CID.<verb>(table)` returns a builder;
+   chain modifiers (`.values()`, `.set()`, `.where()`, ...) and terminate
+   with `.execute()` for writes or `.get()`/`.first()` for reads. E.g.
+   `CID.insert(table).values(data).execute()` returns the full inserted row.
+   This replaces one-shot helpers like the old `fetchBy(table, key, value)`,
+   so filtering on more than one condition is possible.
 3. Queries always return full row objects — no column projection/select-list
-   like real SQL.
+   like real SQL. Same for insert/update: they return the full row, not just
+   its id.
 4. `where()` must support composable `and`/`or` conditions (Drizzle-style),
    not just a flat left-to-right chain.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
@@ -86,6 +91,7 @@ the user explicitly changes one.
 
 ## Status
 
-Implemented so far, in `cid.src`: `CID.connect()`, `CID.insert()`. `uuid.src`
-is in the repo and provides the global `uuid()` function used to assign row
-ids. Everything else in the feature decisions above is still pending.
+Implemented so far, in `cid.src`: `CID.connect()` and `CID.insert(table)`
+(builder: `.values(data).execute()`). `uuid.src` is in the repo and provides
+the global `uuid()` function used to assign row ids. Everything else in the
+feature decisions above is still pending.
