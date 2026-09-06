@@ -50,8 +50,10 @@ _values = function(data)
 end function
 
 /*
-* Runs an insert builder: stores a shallow copy of .data with a fresh
-* uuid assigned to its id field, overwriting any id the caller set.
+* Runs an insert builder: stores a copy of .data with a fresh uuid
+* assigned to its id field, overwriting any id the caller set. Returns
+* a separate copy of that row, so modifying it doesn't change the
+* stored table without going through update().
 *
 * Return map (the inserted row) or string (error message) on failure
 */
@@ -61,7 +63,7 @@ _insert_execute = function()
         row = {} + self.data
         row.id = uuid()
         self.db.tables[self.table].push(row)
-        return row
+        return {} + row
 end function
 
 /*
