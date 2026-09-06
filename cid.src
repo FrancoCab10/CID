@@ -119,7 +119,7 @@ end function
 * replacing any existing file there. The compiled binary only unlocks
 * its data when launched with the correct password.
 *
-* Return CID (success) or string (error message) on failure
+* Return 1 (success) or string (error message) on failure
 */
 CID.write = function()
         staging_dir = self.folder
@@ -159,5 +159,5 @@ CID.write = function()
         if existing_file then existing_file.delete()
         compiled_file.rename(self.name + ".db")
         staging_file.delete()
-        return self
+        return 1
 end function
