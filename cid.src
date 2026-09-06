@@ -82,8 +82,9 @@ CID.insert = function(table)
 end function
 
 /*
-* Runs a query builder: returns a shallow copy of the table's rows, so
-* pushing/popping on the result doesn't affect the stored table.
+* Runs a query builder: returns a copy of the table's rows (fresh list,
+* fresh row maps), so nothing in the result shares state with the
+* stored table.
 *
 * Return list (the table's rows) or string (error message) on failure
 */
@@ -91,7 +92,7 @@ _query_execute = function()
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         rows = []
         for row in self.db.tables[self.table]
-                rows.push(row)
+                rows.push({} + row)
         end for
         return rows
 end function

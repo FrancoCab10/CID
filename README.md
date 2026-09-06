@@ -49,7 +49,7 @@ print(item.id)
 
 ### CID.query(table)
 
-Starts a query builder for a table. Chain `.execute()` to run it and get back the table's rows. No filters yet (`where`/`orderBy`/`limit`/`offset` are still to come) — it returns the whole table, as a fresh list so pushing/popping on the result doesn't affect the stored table.
+Starts a query builder for a table. Chain `.execute()` to run it and get back the table's rows. No filters yet (`where`/`orderBy`/`limit`/`offset` are still to come) — it returns the whole table, as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table.
 
 Example Usage:
 
