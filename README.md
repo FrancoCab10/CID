@@ -51,6 +51,8 @@ print(item.id)
 
 Compiles the in-memory tables into the binary database at the configured path, replacing any existing file there. The compiled binary only unlocks its data when launched with the correct password; anyone else who tries to run it directly just sees an info message.
 
+On failure (staging file couldn't be created, compilation failed, ...) returns a plain string with the error message instead of `self` — check `typeof(result) == "string"` to tell them apart.
+
 Example Usage:
 
 ```

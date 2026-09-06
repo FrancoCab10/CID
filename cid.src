@@ -86,15 +86,17 @@ end function
 * replacing any existing file there. The compiled binary only unlocks
 * its data when launched with the correct password.
 *
-* Return CID
+* Return CID (success) or string (error message) on failure
 */
 CID.write = function()
         staging_dir = self.folder
         staging_name = md5(rnd() + current_date)[0:6]
         staging_src = staging_name + ".src"
         staging_path = staging_dir + "/" + staging_src
-        get_shell.host_computer.touch(staging_dir, staging_src)
+        touch_result = get_shell.host_computer.touch(staging_dir, staging_src)
+        if typeof(touch_result) == "string" and touch_result != "" then return "Could not create staging file in " + staging_dir + ": " + touch_result
         staging_file = get_shell.host_computer.File(staging_path)
+        if not staging_file then return "Could not create staging file at " + staging_path
         staging_file.chmod("o-rwx")
         staging_file.chmod("g-wx")
         staging_file.chmod("g+r")
@@ -110,10 +112,19 @@ CID.write = function()
                 end for
         end for
         staging_file.set_content(lines.join(char(10)))
-        get_shell.build(staging_path, self.folder, false)
+        build_result = get_shell.build(staging_path, self.folder, false)
+        if typeof(build_result) == "string" and build_result != "" then
+                staging_file.delete()
+                return "Compilation failed: " + build_result
+        end if
+        compiled_file = get_shell.host_computer.File(self.folder + "/" + staging_name)
+        if not compiled_file then
+                staging_file.delete()
+                return "Build succeeded but the compiled file is missing"
+        end if
         existing_file = get_shell.host_computer.File(self.path)
         if existing_file then existing_file.delete()
-        get_shell.host_computer.File(self.folder + "/" + staging_name).rename(self.name + ".db")
+        compiled_file.rename(self.name + ".db")
         staging_file.delete()
         return self
 end function
