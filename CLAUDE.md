@@ -105,7 +105,14 @@ the user explicitly changes one.
 
 ## Status
 
-Implemented so far, in `cid.src`: `CID.connect()` and `CID.insert(table)`
-(builder: `.values(data).execute()`). `uuid.src` is in the repo and provides
-the global `uuid()` function used to assign row ids. Everything else in the
-feature decisions above is still pending.
+Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
+`/root`), `CID.insert(table)` (builder: `.values(data).execute()`), and
+`CID.write()`. `uuid.src` is in the repo and provides the global `uuid()`
+function used to assign row ids. Everything else in the feature decisions
+above is still pending.
+
+Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
+back into `self.tables` — every connect() starts from empty tables, even if
+a database was already written to that path. Reading the compiled binary
+back (the old BinDB.read() did this via get_shell.launch() + get_custom_object)
+is still to do.

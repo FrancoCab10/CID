@@ -25,7 +25,7 @@ import_code("/absolute/path/of/cid.src")
 
 ### CID.connect(dbName, dbPassword, dbTables, dbPath)
 
-Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time.
+Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time. `dbPath` defaults to `/root` when omitted.
 
 Example Usage:
 
@@ -45,4 +45,15 @@ Example Usage:
 ```
 item = lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
 print(item.id)
+```
+
+### CID.write()
+
+Compiles the in-memory tables into the binary database at the configured path, replacing any existing file there. The compiled binary only unlocks its data when launched with the correct password; anyone else who tries to run it directly just sees an info message.
+
+Example Usage:
+
+```
+lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
+lootDb.write()
 ```
