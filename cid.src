@@ -82,6 +82,36 @@ CID.insert = function(table)
 end function
 
 /*
+* Runs a query builder: returns a shallow copy of the table's rows, so
+* pushing/popping on the result doesn't affect the stored table.
+*
+* Return list (the table's rows) or string (error message) on failure
+*/
+_query_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        rows = []
+        for row in self.db.tables[self.table]
+                rows.push(row)
+        end for
+        return rows
+end function
+
+/*
+* Starts a query builder for a table. Chain .execute() to run it.
+* No filters yet — returns the whole table.
+*
+* table string, name of the table to query
+* Return map, the query builder
+*/
+CID.query = function(table)
+        builder = {}
+        builder.db = self
+        builder.table = table
+        builder.execute = @_query_execute
+        return builder
+end function
+
+/*
 * Compiles the in-memory tables into the binary database at self.path,
 * replacing any existing file there. The compiled binary only unlocks
 * its data when launched with the correct password.

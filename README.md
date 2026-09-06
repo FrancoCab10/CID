@@ -47,6 +47,18 @@ item = lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execut
 print(item.id)
 ```
 
+### CID.query(table)
+
+Starts a query builder for a table. Chain `.execute()` to run it and get back the table's rows. No filters yet (`where`/`orderBy`/`limit`/`offset` are still to come) — it returns the whole table, as a fresh list so pushing/popping on the result doesn't affect the stored table.
+
+Example Usage:
+
+```
+for item in lootDb.query("items").execute()
+        print(item.name)
+end for
+```
+
 ### CID.write()
 
 Compiles the in-memory tables into the binary database at the configured path, replacing any existing file there. The compiled binary only unlocks its data when launched with the correct password; anyone else who tries to run it directly just sees an info message.
