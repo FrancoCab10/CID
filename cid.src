@@ -89,7 +89,7 @@ end function
 * Return CID
 */
 CID.write = function()
-        staging_dir = "/root"
+        staging_dir = self.folder
         staging_name = md5(rnd() + current_date)[0:6]
         staging_src = staging_name + ".src"
         staging_path = staging_dir + "/" + staging_src
