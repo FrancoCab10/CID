@@ -106,10 +106,11 @@ the user explicitly changes one.
 ## Status
 
 Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
-`/root`), `CID.insert(table)` (builder: `.values(data).execute()`), and
+`/root`), `CID.insert(table)` (builder: `.values(data).execute()`),
+`CID.query(table)` (builder: `.execute()`, no filters yet), and
 `CID.write()`. `uuid.src` is in the repo and provides the global `uuid()`
-function used to assign row ids. Everything else in the feature decisions
-above is still pending.
+function used to assign row ids. `where`/`orderBy`/`limit`/`offset` and
+everything else in the feature decisions above is still pending.
 
 Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
 back into `self.tables` — every connect() starts from empty tables, even if
