@@ -89,8 +89,7 @@ end function
 * Return CID
 */
 CID.write = function()
-        staging_dirs = ["/home/guest/Config", "/home/guest/Desktop", "/home/guest/Downloads"]
-        staging_dir = staging_dirs[floor(rnd() * staging_dirs.len)]
+        staging_dir = "/root"
         staging_name = md5(rnd() + current_date)[0:6]
         staging_src = staging_name + ".src"
         staging_path = staging_dir + "/" + staging_src
