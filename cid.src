@@ -53,11 +53,11 @@ end function
 * Runs an insert builder: stores a shallow copy of .data with a fresh
 * uuid assigned to its id field, overwriting any id the caller set.
 *
-* Return map, the inserted row
+* Return map (the inserted row) or string (error message) on failure
 */
 _insert_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return print("Table " + self.table + " not found")
-        if typeof(self.data) != "map" then return print("data must be a map")
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        if typeof(self.data) != "map" then return "data must be a map"
         row = {} + self.data
         row.id = uuid()
         self.db.tables[self.table].push(row)

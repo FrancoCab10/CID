@@ -60,6 +60,15 @@ the user explicitly changes one.
 - `//` single-line comments are fine but rare — only when something
   genuinely needs clarifying, and explain the *why*, not the *what*.
 
+## Error handling
+
+- Library code never calls `print()` on failure — that takes error-message
+  control away from the programmer using the library. On failure, `return`
+  the error message as a plain string instead; the caller decides whether to
+  print it, log it, or handle it some other way.
+- Since success values are otherwise maps/lists/numbers, callers can check
+  `typeof(result) == "string"` to detect an error.
+
 ## Workflow
 
 - Build incrementally: smallest useful piece first.

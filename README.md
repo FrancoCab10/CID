@@ -38,6 +38,8 @@ configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
 
 Starts an insert builder for a table. Chain `.values(data)` to set the row, then `.execute()` to run it and get back the inserted row. A fresh id is generated for the row, overwriting any `id` present in `data`, so rows can later be looked up, updated, or deleted by id.
 
+On failure, `.execute()` returns a plain string with the error message instead of the row — check `typeof(result) == "string"` to tell them apart. CID never prints errors itself; that's left to your code.
+
 Example Usage:
 
 ```
