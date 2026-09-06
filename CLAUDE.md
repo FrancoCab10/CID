@@ -16,6 +16,11 @@ the user explicitly changes one.
   it's trivial to `import_code` into any project.
 - One external dependency: `uuid.src` (a separate file, provided by the user),
   used to generate unique row IDs. No other dependencies.
+- `CID` is the only class in the file. Insert/update/delete/query builders
+  are plain maps (`{}`), not separate classes — wire up shared behavior with
+  bare helper functions referenced via `@`, e.g. `builder.values = @_values`,
+  so logic used by more than one builder (like setting the data payload)
+  isn't duplicated per class.
 
 ## Code style
 
@@ -55,6 +60,15 @@ the user explicitly changes one.
 - `//` single-line comments are fine but rare — only when something
   genuinely needs clarifying, and explain the *why*, not the *what*.
 
+## Error handling
+
+- Library code never calls `print()` on failure — that takes error-message
+  control away from the programmer using the library. On failure, `return`
+  the error message as a plain string instead; the caller decides whether to
+  print it, log it, or handle it some other way.
+- Since success values are otherwise maps/lists/numbers, callers can check
+  `typeof(result) == "string"` to detect an error.
+
 ## Workflow
 
 - Build incrementally: smallest useful piece first.
@@ -63,16 +77,21 @@ the user explicitly changes one.
   in-game before the next feature builds on top of it — keep PRs scoped to
   one testable feature at a time.
 
-## Feature decisions (not yet implemented)
+## Feature decisions
 
 1. `CID.connect(...)` returns a fresh, independent instance every call, so a
    project can split its data across multiple files, e.g. `loot.db`,
    `config.db`, `libs.db`, at the same time.
-2. A Drizzle-inspired fluent query builder replaces one-shot helpers like the
-   old `fetchBy(table, key, value)`, so filtering on more than one condition
-   is possible.
+2. Every operation — insert, update, delete, and querying — follows the same
+   Drizzle-inspired builder shape: `CID.<verb>(table)` returns a builder;
+   chain modifiers (`.values()`, `.set()`, `.where()`, ...) and terminate
+   with `.execute()` for writes or `.get()`/`.first()` for reads. E.g.
+   `CID.insert(table).values(data).execute()` returns the full inserted row.
+   This replaces one-shot helpers like the old `fetchBy(table, key, value)`,
+   so filtering on more than one condition is possible.
 3. Queries always return full row objects — no column projection/select-list
-   like real SQL.
+   like real SQL. Same for insert/update: they return the full row, not just
+   its id.
 4. `where()` must support composable `and`/`or` conditions (Drizzle-style),
    not just a flat left-to-right chain.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
@@ -86,5 +105,7 @@ the user explicitly changes one.
 
 ## Status
 
-No implementation yet. Only `README.md`, `LICENSE.md`, and this file exist at
-the repo root.
+Implemented so far, in `cid.src`: `CID.connect()` and `CID.insert(table)`
+(builder: `.values(data).execute()`). `uuid.src` is in the repo and provides
+the global `uuid()` function used to assign row ids. Everything else in the
+feature decisions above is still pending.
