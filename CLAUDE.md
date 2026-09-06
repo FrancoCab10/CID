@@ -16,6 +16,11 @@ the user explicitly changes one.
   it's trivial to `import_code` into any project.
 - One external dependency: `uuid.src` (a separate file, provided by the user),
   used to generate unique row IDs. No other dependencies.
+- `CID` is the only class in the file. Insert/update/delete/query builders
+  are plain maps (`{}`), not separate classes — wire up shared behavior with
+  bare helper functions referenced via `@`, e.g. `builder.values = @_values`,
+  so logic used by more than one builder (like setting the data payload)
+  isn't duplicated per class.
 
 ## Code style
 
