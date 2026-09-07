@@ -25,14 +25,14 @@ import_code("/absolute/path/of/cid.src")
 
 ### CID.connect(dbName, dbPassword, dbTables, dbPath)
 
-Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time. `dbPath` defaults to `/root` when omitted.
+Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `hosts.db`, `config.db`, `sessions.db`) at the same time. `dbPath` defaults to `/root` when omitted.
 
 If a `.db` file already exists at the resolved path, its data is loaded back automatically (see `CID.read()`) — otherwise the instance starts with empty tables.
 
 Example Usage:
 
 ```
-lootDb = CID.connect("loot", "mypassword", ["items", "credits"], "/home/<user>")
+hostsDb = CID.connect("hosts", "mypassword", ["hosts"], "/home/<user>")
 configDb = CID.connect("config", "otherpassword", ["settings"], "/home/<user>")
 ```
 
@@ -45,8 +45,8 @@ On failure, `.execute()` returns a plain string with the error message instead o
 Example Usage:
 
 ```
-item = lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
-print(item.id)
+host = hostsDb.insert("hosts").values({"public_ip": "200.43.192.35", "local_ip": "192.168.0.10", "root_pw": "hunter2"}).execute()
+print(host.id)
 ```
 
 ### CID.update(table)
@@ -60,7 +60,7 @@ On failure (unknown table, `data` isn't a map) returns a plain string with the e
 Example Usage:
 
 ```
-lootDb.update("items").set({"quantity": 5}).where(CID.eq("name", "lockpick")).execute()
+hostsDb.update("hosts").set({"root_pw": "newpassword"}).where(CID.eq("public_ip", "200.43.192.35")).execute()
 ```
 
 ### CID.delete(table)
@@ -72,7 +72,7 @@ Returns a list of the deleted rows (copies), or an empty list if nothing matched
 Example Usage:
 
 ```
-removed = lootDb.delete("items").where(CID.eq("name", "lockpick")).execute()
+removed = hostsDb.delete("hosts").where(CID.eq("public_ip", "200.43.192.35")).execute()
 print(removed.len)
 ```
 
@@ -89,8 +89,8 @@ Pipeline order is fixed: filter, then sort, then offset, then limit — same as 
 Example Usage:
 
 ```
-for item in lootDb.query("items").execute()
-        print(item.name)
+for host in hostsDb.query("hosts").execute()
+        print(host.public_ip)
 end for
 ```
 
@@ -118,10 +118,10 @@ hosts = hostsDb.query("hosts").where(
 
 #### order_by(field, direction) / offset(n) / limit(n)
 
-Example Usage — top 3 hosts by uptime, skipping the first one:
+Example Usage — top 3 hosts by public IP descending, skipping the first one:
 
 ```
-hosts = hostsDb.query("hosts").order_by("uptime", "desc").offset(1).limit(3).execute()
+hosts = hostsDb.query("hosts").order_by("public_ip", "desc").offset(1).limit(3).execute()
 ```
 
 ### CID.write()
@@ -135,8 +135,8 @@ Returns `1` on success. On failure (staging file couldn't be created, compilatio
 Example Usage:
 
 ```
-lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
-lootDb.write()
+hostsDb.insert("hosts").values({"public_ip": "200.43.192.35", "local_ip": "192.168.0.10", "root_pw": "hunter2"}).execute()
+hostsDb.write()
 ```
 
 ### CID.read()
@@ -148,5 +148,5 @@ If no file exists at the path yet, this just resets `self.tables` to empty for e
 Example Usage:
 
 ```
-lootDb.read()
+hostsDb.read()
 ```
