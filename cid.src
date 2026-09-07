@@ -66,13 +66,17 @@ end function
 // ==================
 // HELPERS
 // ==================
+// Namespaced under CID (not bare globals) for the same reason as the
+// operators above: import_code dumps everything into the caller's global
+// scope, and names this short/common are exactly what a consumer's own
+// script might already use.
 
 // Shared builder step: sets the data payload. Used by insert's
 // .values() and (later) update's .set().
 //
 // data map
 // Return the builder
-_values = function(data)
+CID._values = function(data)
         self.data = data
         return self
 end function
@@ -82,7 +86,7 @@ end function
 // value string
 // pattern string
 // Return boolean
-_matches_like = function(value, pattern)
+CID._matches_like = function(value, pattern)
         value = value.lower()
         core = pattern.lower()
         starts_wildcard = false
@@ -112,16 +116,16 @@ end function
 // row map
 // condition map
 // Return boolean
-_eval_condition = function(row, condition)
+CID._eval_condition = function(row, condition)
         if condition.op == "and" then
                 for clause in condition.clauses
-                        if not _eval_condition(row, clause) then return false
+                        if not CID._eval_condition(row, clause) then return false
                 end for
                 return true
         end if
         if condition.op == "or" then
                 for clause in condition.clauses
-                        if _eval_condition(row, clause) then return true
+                        if CID._eval_condition(row, clause) then return true
                 end for
                 return false
         end if
@@ -133,7 +137,7 @@ _eval_condition = function(row, condition)
         if condition.op == ">=" then return v >= condition.value
         if condition.op == "<" then return v < condition.value
         if condition.op == "<=" then return v <= condition.value
-        if condition.op == "like" then return _matches_like(str(v), condition.value)
+        if condition.op == "like" then return CID._matches_like(str(v), condition.value)
         return false
 end function
 
@@ -143,9 +147,39 @@ end function
 //
 // condition map, built via CID.eq/... and CID.every/CID.some
 // Return the builder
-_where = function(condition)
+CID._where = function(condition)
         self.condition = condition
         return self
+end function
+
+// Runs an insert builder: stores a copy of .data with a fresh uuid
+// assigned to its id field, overwriting any id the caller set. Returns
+// a separate copy of that row, so modifying it doesn't change the
+// stored table without going through update().
+//
+// Return map (the inserted row) or string (error message) on failure
+CID._insert_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        if typeof(self.data) != "map" then return "data must be a map"
+        row = {} + self.data
+        row.id = uuid()
+        self.db.tables[self.table].push(row)
+        return {} + row
+end function
+
+// Runs a query builder: returns a copy of the rows matching .condition
+// (fresh list, fresh row maps), so nothing in the result shares state
+// with the stored table. No condition set means every row matches.
+//
+// Return list (the matching rows) or string (error message) on failure
+CID._query_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        rows = []
+        for row in self.db.tables[self.table]
+                if self.condition != null and not CID._eval_condition(row, self.condition) then continue
+                rows.push({} + row)
+        end for
+        return rows
 end function
 
 // ==================
@@ -176,21 +210,6 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         return instance
 end function
 
-// Runs an insert builder: stores a copy of .data with a fresh uuid
-// assigned to its id field, overwriting any id the caller set. Returns
-// a separate copy of that row, so modifying it doesn't change the
-// stored table without going through update().
-//
-// Return map (the inserted row) or string (error message) on failure
-_insert_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
-        if typeof(self.data) != "map" then return "data must be a map"
-        row = {} + self.data
-        row.id = uuid()
-        self.db.tables[self.table].push(row)
-        return {} + row
-end function
-
 // Starts an insert builder for a table. Chain .values(data) then
 // .execute() to run it.
 //
@@ -201,24 +220,9 @@ CID.insert = function(table)
         builder.db = self
         builder.table = table
         builder.data = null
-        builder.values = @_values
-        builder.execute = @_insert_execute
+        builder.values = @CID["_values"]
+        builder.execute = @CID["_insert_execute"]
         return builder
-end function
-
-// Runs a query builder: returns a copy of the rows matching .condition
-// (fresh list, fresh row maps), so nothing in the result shares state
-// with the stored table. No condition set means every row matches.
-//
-// Return list (the matching rows) or string (error message) on failure
-_query_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
-        rows = []
-        for row in self.db.tables[self.table]
-                if self.condition != null and not _eval_condition(row, self.condition) then continue
-                rows.push({} + row)
-        end for
-        return rows
 end function
 
 // Starts a query builder for a table. Chain .where(condition) then
@@ -231,8 +235,8 @@ CID.query = function(table)
         builder.db = self
         builder.table = table
         builder.condition = null
-        builder.where = @_where
-        builder.execute = @_query_execute
+        builder.where = @CID["_where"]
+        builder.execute = @CID["_query_execute"]
         return builder
 end function
 

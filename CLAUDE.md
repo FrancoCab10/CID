@@ -18,9 +18,17 @@ the user explicitly changes one.
   used to generate unique row IDs. No other dependencies.
 - `CID` is the only class in the file. Insert/update/delete/query builders
   are plain maps (`{}`), not separate classes — wire up shared behavior with
-  bare helper functions referenced via `@`, e.g. `builder.values = @_values`,
+  helper functions referenced via `@`, e.g. `builder.values = @CID["_values"]`,
   so logic used by more than one builder (like setting the data payload)
-  isn't duplicated per class.
+  isn't duplicated per class. Use bracket form (`@CID["_values"]`), not
+  `@CID._values` — confirmed live in-game that the dotted form doesn't
+  behave the same as a bare `@_values` did, even though both run fine
+  through greybel's local Mock interpreter. Mock is not a substitute for
+  live testing on anything involving `@`.
+- Every function lives under the `CID` namespace, public and internal alike
+  — no bare globals, not even helpers. `import_code` dumps everything into
+  the caller's global scope, so a bare `_values` or `_where` is exactly the
+  kind of short name a consumer's own script might already have.
 
 ## Code style
 
@@ -33,8 +41,8 @@ the user explicitly changes one.
 - 8 spaces per indentation level.
 - Keep functions short. Avoid more than 3 indentation levels inside a
   function — extract a helper instead.
-- Internal/helper functions are prefixed with `_` (still snake_case), e.g.
-  `_eval_conditions`.
+- Internal/helper functions are prefixed with `_` and namespaced under
+  `CID` (still snake_case), e.g. `CID._eval_condition`.
 
 ## Comments
 
@@ -102,8 +110,8 @@ the user explicitly changes one.
    `import_code` dumps everything into the caller's global scope and short
    names like that are exactly what a consumer's own script is likely to
    already use. `every`/`some` take a list (no varargs in GreyScript) and
-   can nest arbitrarily deep. A shared `_where`/`_eval_condition` pair backs
-   `.where()` so update/delete can reuse it once they land.
+   can nest arbitrarily deep. A shared `CID._where`/`CID._eval_condition`
+   pair backs `.where()` so update/delete can reuse it once they land.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
    relate tables by storing IDs and issuing multiple queries.
 6. `update`/`delete` operate on row IDs (via `uuid.src`), not array index,
