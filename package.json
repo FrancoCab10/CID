@@ -1,0 +1,8 @@
+{
+  "name": "cid",
+  "private": true,
+  "description": "Build tooling for CID: Central Intelligence Database",
+  "devDependencies": {
+    "greybel-js": "3.7.12"
+  }
+}

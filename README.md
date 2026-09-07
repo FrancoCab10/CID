@@ -21,6 +21,8 @@ import_code("/absolute/path/of/uuid.src")
 import_code("/absolute/path/of/cid.src")
 ```
 
+`cid.src`/`uuid.src` at the repo root use [greybel](https://github.com/ayecue/greybel-js) syntax extensions and are meant for the greybel language server/CLI toolchain. If you're pasting code straight into Grey Hack's in-game editor instead, use [`dist/cid.src`](dist/cid.src) and [`dist/uuid.src`](dist/uuid.src) — plain GreyScript, auto-generated from the files above on every merge to `main`.
+
 ## Available methods
 
 ### CID.connect(dbName, dbPassword, dbTables, dbPath)

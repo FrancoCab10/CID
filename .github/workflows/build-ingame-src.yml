@@ -1,0 +1,36 @@
+name: Build in-game sources
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Build cid.src
+        run: ./node_modules/.bin/greybel build cid.src ./dist -b -bkp -bi whitespace -bis 8 -dbf -of cid.src
+
+      - name: Build uuid.src
+        run: ./node_modules/.bin/greybel build uuid.src ./dist -b -bkp -bi whitespace -bis 8 -dbf -of uuid.src
+
+      - name: Commit dist if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/cid.src dist/uuid.src
+          git diff --cached --quiet && echo "No changes" || git commit -m "chore: rebuild in-game sources [skip ci]"
+          git push

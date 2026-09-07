@@ -1,23 +1,25 @@
-/* CID (Central Intelligence Database)
-* version: 0.1.0
-* author: R34lQu1ck'
-*
-* A GreyScript database library for Grey Hack.
-* repository: https://github.com/FrancoCab10/CID
-*
-* Import with: import_code("/path/to/cid.src") */
+// CID (Central Intelligence Database)
+// * version: 0.1.0
+// * author: R34lQu1ck'
+// *
+// * A GreyScript database library for Grey Hack.
+// * repository: https://github.com/FrancoCab10/CID
+// *
+// * Import with: import_code("/path/to/cid.src")
+
 
 CID = {}
 
-/* Creates a new, independent CID instance. Every call returns its own
-* instance, so multiple databases can coexist in the same script.
-*
-* db_name string, database name, used as the file name
-* db_password string, password required to open the compiled binary
-* db_tables list, table names to initialize
-* db_path string, directory to store the database in. Defaults to /root
-* Return CID */
-CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], db_path="")
+// Creates a new, independent CID instance. Every call returns its own
+// * instance, so multiple databases can coexist in the same script.
+// *
+// * db_name string, database name, used as the file name
+// * db_password string, password required to open the compiled binary
+// * db_tables list, table names to initialize
+// * db_path string, directory to store the database in. Defaults to /root
+// * Return CID
+
+CID.connect = function(db_name = "CID", db_password = "admin", db_tables = [ "table" ], db_path = "")
         instance = new CID
         instance.name = db_name
         instance.password = db_password
@@ -25,7 +27,7 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         if db_path == "" then db_path = "/root"
         instance.path = db_path + "/" + instance.name + ".db"
         instance.path = instance.path.replace("//", "/")
-        instance.folder = instance.path.split("/")[0:-1].join("/")
+        instance.folder = instance.path.split("/")[0 : -1].join("/")
         instance.tables = {}
         for table_name in instance.db_tables
                 instance.tables[table_name] = []
@@ -33,36 +35,39 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         return instance
 end function
 
-/* Shared builder step: sets the data payload. Used by insert's
-* .values() and (later) update's .set().
-*
-* data map
-* Return the builder */
+// Shared builder step: sets the data payload. Used by insert's
+// * .values() and (later) update's .set().
+// *
+// * data map
+// * Return the builder
+
 _values = function(data)
         self.data = data
         return self
 end function
 
-/* Runs an insert builder: stores a copy of .data with a fresh uuid
-* assigned to its id field, overwriting any id the caller set. Returns
-* a separate copy of that row, so modifying it doesn't change the
-* stored table without going through update().
-*
-* Return map (the inserted row) or string (error message) on failure */
-_insert_execute = function()
+// Runs an insert builder: stores a copy of .data with a fresh uuid
+// * assigned to its id field, overwriting any id the caller set. Returns
+// * a separate copy of that row, so modifying it doesn't change the
+// * stored table without going through update().
+// *
+// * Return map (the inserted row) or string (error message) on failure
+
+_insert_execute = function
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         if typeof(self.data) != "map" then return "data must be a map"
         row = {} + self.data
-        row.id = uuid()
+        row.id = uuid
         self.db.tables[self.table].push(row)
         return {} + row
 end function
 
-/* Starts an insert builder for a table. Chain .values(data) then
-* .execute() to run it.
-*
-* table string, name of the table to insert into
-* Return map, the insert builder */
+// Starts an insert builder for a table. Chain .values(data) then
+// * .execute() to run it.
+// *
+// * table string, name of the table to insert into
+// * Return map, the insert builder
+
 CID.insert = function(table)
         builder = {}
         builder.db = self
@@ -73,12 +78,13 @@ CID.insert = function(table)
         return builder
 end function
 
-/* Runs a query builder: returns a copy of the table's rows (fresh list,
-* fresh row maps), so nothing in the result shares state with the
-* stored table.
-*
-* Return list (the table's rows) or string (error message) on failure */
-_query_execute = function()
+// Runs a query builder: returns a copy of the table's rows (fresh list,
+// * fresh row maps), so nothing in the result shares state with the
+// * stored table.
+// *
+// * Return list (the table's rows) or string (error message) on failure
+
+_query_execute = function
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         rows = []
         for row in self.db.tables[self.table]
@@ -87,11 +93,12 @@ _query_execute = function()
         return rows
 end function
 
-/* Starts a query builder for a table. Chain .execute() to run it.
-* No filters yet — returns the whole table.
-*
-* table string, name of the table to query
-* Return map, the query builder */
+// Starts a query builder for a table. Chain .execute() to run it.
+// * No filters yet — returns the whole table.
+// *
+// * table string, name of the table to query
+// * Return map, the query builder
+
 CID.query = function(table)
         builder = {}
         builder.db = self
@@ -100,14 +107,15 @@ CID.query = function(table)
         return builder
 end function
 
-/* Compiles the in-memory tables into the binary database at self.path,
-* replacing any existing file there. The compiled binary only unlocks
-* its data when launched with the correct password.
-*
-* Return 1 (success) or string (error message) on failure */
-CID.write = function()
+// Compiles the in-memory tables into the binary database at self.path,
+// * replacing any existing file there. The compiled binary only unlocks
+// * its data when launched with the correct password.
+// *
+// * Return 1 (success) or string (error message) on failure
+
+CID.write = function
         staging_dir = self.folder
-        staging_name = md5(rnd() + current_date)[0:6]
+        staging_name = md5(rnd + current_date)[0 : 6]
         staging_src = staging_name + ".src"
         staging_path = staging_dir + "/" + staging_src
         touch_result = get_shell.host_computer.touch(staging_dir, staging_src)
@@ -131,17 +139,17 @@ CID.write = function()
         staging_file.set_content(lines.join(char(10)))
         build_result = get_shell.build(staging_path, self.folder, false)
         if typeof(build_result) == "string" and build_result != "" then
-                staging_file.delete()
+                staging_file.delete
                 return "Compilation failed: " + build_result
         end if
         compiled_file = get_shell.host_computer.File(self.folder + "/" + staging_name)
         if not compiled_file then
-                staging_file.delete()
+                staging_file.delete
                 return "Build succeeded but the compiled file is missing"
         end if
         existing_file = get_shell.host_computer.File(self.path)
-        if existing_file then existing_file.delete()
+        if existing_file then existing_file.delete
         compiled_file.rename(self.name + ".db")
-        staging_file.delete()
+        staging_file.delete
         return 1
 end function
