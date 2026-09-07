@@ -285,10 +285,25 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         instance.path = instance.path.replace("//", "/")
         instance.folder = instance.path.split("/")[0:-1].join("/")
         instance.tables = {}
-        for table_name in instance.db_tables
-                instance.tables[table_name] = []
-        end for
+        instance.read()
         return instance
+end function
+
+// Resets self.tables to empty for each declared table, then loads
+// self.path's compiled binary back in if it exists there, overwriting
+// with whatever was last written. Called automatically by connect(); call
+// again later to pick up changes another script wrote to the same file.
+//
+// Return CID (self)
+CID.read = function()
+        for table_name in self.db_tables
+                self.tables[table_name] = []
+        end for
+        existing_file = get_shell.host_computer.File(self.path)
+        if not existing_file then return self
+        get_shell.launch(self.path, self.password)
+        if get_custom_object.hasIndex(self.name) then self.tables = get_custom_object[self.name]
+        return self
 end function
 
 // Starts an insert builder for a table. Chain .values(data) then
