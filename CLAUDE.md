@@ -135,7 +135,13 @@ the user explicitly changes one.
    array position shifts whenever a row is deleted. Both act on every
    matching row, not just one by id specifically: `update()` patches
    (merges into) each match, `delete()` removes each match.
-7. Queries support `limit` and `offset`.
+7. Queries support `order_by`, `offset`, and `limit` — snake_case to match
+   the rest of the naming convention (not `orderBy`). Fixed pipeline order:
+   filter (`where`), then `order_by`, then `offset`, then `limit`, mirroring
+   SQL's own `WHERE` → `ORDER BY` → `OFFSET` → `LIMIT`. `order_by` uses
+   miniscript's built-in `list.sort(key, ascending_bool)` — confirmed live
+   via `greybel execute` that the second argument is a plain bool (`false`
+   for descending), not a rank/direction enum.
 8. `id` is immutable once a row is inserted — never settable via
    `insert().values()` (a fresh `uuid()` always overwrites whatever `id` is
    passed in) and never patchable via `update().set()` (the `id` key is
@@ -158,15 +164,16 @@ Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
 `CID.update(table)` (builder: `.set(data).where(condition).execute()`,
 PATCH semantics — merges into matching rows, doesn't replace them),
 `CID.delete(table)` (builder: `.where(condition).execute()`, returns the
-deleted rows), `CID.query(table)` (builder: `.where(condition).execute()`,
-with `CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, shared by
-`update`/`delete`'s `.where()` too), `CID.write()`, and `CID.read()`
+deleted rows), `CID.query(table)` (builder:
+`.where(condition).order_by(field, direction).offset(n).limit(n).execute()`,
+with `CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, `where`
+shared by `update`/`delete` too), `CID.write()`, and `CID.read()`
 (reloads `self.tables` from the compiled binary via `get_shell.launch()` +
 `get_custom_object`, same mechanism the old `BinDB.read()` used; `connect()`
 calls it once automatically). `uuid.src` is in the repo and provides the
-global `uuid()` function used to assign row ids. `orderBy`/`limit`/`offset`
-and everything else in the feature decisions above is still pending — CRUD
-is otherwise complete.
+global `uuid()` function used to assign row ids. `join` and everything else
+in the feature decisions above is still pending — CRUD plus filtering,
+sorting, and pagination is otherwise complete.
 
 `read()`'s `get_shell.launch()`/`get_custom_object` path is unverified —
 same category as `write()`'s Grey Hack-specific calls, not something Mock

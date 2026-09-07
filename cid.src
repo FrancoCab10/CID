@@ -198,6 +198,38 @@ CID._where = function(condition)
         return self
 end function
 
+// Shared builder step: sets the sort field/direction for query results,
+// applied before offset/limit. direction: "asc" (default) or "desc".
+//
+// field string
+// direction string
+// Return the builder
+CID._order_by = function(field, direction="asc")
+        self.order_field = field
+        self.order_direction = direction
+        return self
+end function
+
+// Shared builder step: sets how many rows query results skip before
+// returning any, applied after ordering and before limit.
+//
+// n number
+// Return the builder
+CID._offset = function(n)
+        self.offset_value = n
+        return self
+end function
+
+// Shared builder step: sets the max number of rows query results return,
+// applied after ordering and offset.
+//
+// n number
+// Return the builder
+CID._limit = function(n)
+        self.limit_value = n
+        return self
+end function
+
 // Runs an insert builder: stores a copy of .data with a fresh uuid
 // assigned to its id field, overwriting any id the caller set. Returns
 // a separate copy of that row, so modifying it doesn't change the
@@ -215,7 +247,9 @@ end function
 
 // Runs a query builder: returns a copy of the rows matching .condition
 // (fresh list, fresh row maps), so nothing in the result shares state
-// with the stored table. No condition set means every row matches.
+// with the stored table. Pipeline: filter, then order_by, then offset,
+// then limit. No condition set means every row matches; skipping
+// order_by/offset/limit leaves that step out entirely.
 //
 // Return list (the matching rows) or string (error message) on failure
 CID._query_execute = function()
@@ -225,6 +259,9 @@ CID._query_execute = function()
                 if self.condition != null and not CID._eval_condition(row, self.condition) then continue
                 rows.push({} + row)
         end for
+        if self.order_field != null then rows.sort(self.order_field, self.order_direction != "desc")
+        if self.offset_value != null then rows = rows[self.offset_value:]
+        if self.limit_value != null then rows = rows[:self.limit_value]
         return rows
 end function
 
@@ -363,8 +400,9 @@ CID.delete = function(table)
         return builder
 end function
 
-// Starts a query builder for a table. Chain .where(condition) then
-// .execute() to run it. Skipping .where() matches every row.
+// Starts a query builder for a table. Chain .where(condition),
+// .order_by(field, direction), .offset(n), .limit(n) as needed, then
+// .execute() to run it. Skipping any of them leaves that step out.
 //
 // table string, name of the table to query
 // Return map, the query builder
@@ -373,7 +411,14 @@ CID.query = function(table)
         builder.db = self
         builder.table = table
         builder.condition = null
+        builder.order_field = null
+        builder.order_direction = "asc"
+        builder.offset_value = null
+        builder.limit_value = null
         builder.where = @CID["_where"]
+        builder.order_by = @CID["_order_by"]
+        builder.offset = @CID["_offset"]
+        builder.limit = @CID["_limit"]
         builder.execute = @CID["_query_execute"]
         return builder
 end function
