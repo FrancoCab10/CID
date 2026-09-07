@@ -97,12 +97,12 @@ the user explicitly changes one.
 4. `where()` supports composable `and`/`or` conditions (Drizzle-style), not
    just a flat left-to-right chain. Implemented as a condition tree: leaf
    comparisons (`CID.eq`, `CID.ne`, `CID.gt`, `CID.gte`, `CID.lt`, `CID.lte`,
-   `CID.like`) and combinators (`CID.and`, `CID.or`) are functions namespaced
+   `CID.like`) and combinators (`CID.every`, `CID.some`) are functions namespaced
    under `CID` — not bare globals like Drizzle's own `eq`/`and`/`or` — since
    `import_code` dumps everything into the caller's global scope and short
    names like that are exactly what a consumer's own script is likely to
-   already use. `and`/`or` take a list (no varargs in GreyScript) and can
-   nest arbitrarily deep. A shared `_where`/`_eval_condition` pair backs
+   already use. `every`/`some` take a list (no varargs in GreyScript) and
+   can nest arbitrarily deep. A shared `_where`/`_eval_condition` pair backs
    `.where()` so update/delete can reuse it once they land.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
    relate tables by storing IDs and issuing multiple queries.
@@ -123,7 +123,7 @@ the user explicitly changes one.
 Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
 `/root`), `CID.insert(table)` (builder: `.values(data).execute()`),
 `CID.query(table)` (builder: `.where(condition).execute()`, with
-`CID.eq/ne/gt/gte/lt/lte/like/and/or` condition builders), and
+`CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders), and
 `CID.write()`. `uuid.src` is in the repo and provides the global `uuid()`
 function used to assign row ids. `orderBy`/`limit`/`offset` and everything
 else in the feature decisions above is still pending.

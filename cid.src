@@ -74,7 +74,7 @@ CID.insert = function(table)
 end function
 
 // Leaf condition builders for where(). Each returns a plain map describing
-// one field comparison; combine them with CID.and/CID.or.
+// one field comparison; combine them with CID.every/CID.some.
 //
 // field string
 // value any
@@ -109,15 +109,15 @@ CID.like = function(field, pattern)
 end function
 
 // Combinators: build a condition tree out of leaf conditions (or other
-// and/or nodes) for arbitrary and/or nesting. Take a list since GreyScript
-// has no varargs.
+// every/some nodes) for arbitrary and/or nesting. Take a list since
+// GreyScript has no varargs.
 //
-// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/and/or
+// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/every/some
 // Return map
-CID.and = function(clauses)
+CID.every = function(clauses)
         return {"op": "and", "clauses": clauses}
 end function
-CID.or = function(clauses)
+CID.some = function(clauses)
         return {"op": "or", "clauses": clauses}
 end function
 
@@ -140,8 +140,9 @@ _matches_like = function(value, pattern)
         return value == core
 end function
 
-// Evaluates a condition tree (built via CID.eq/.../CID.and/or) against a
-// row. "and"/"or" nodes recurse over .clauses; leaf nodes compare a field.
+// Evaluates a condition tree (built via CID.eq/.../CID.every/CID.some)
+// against a row. "and"/"or" nodes recurse over .clauses; leaf nodes
+// compare a field.
 //
 // row map
 // condition map
@@ -172,10 +173,10 @@ _eval_condition = function(row, condition)
 end function
 
 // Shared builder step: sets the row-filter condition tree, built with
-// CID.eq/ne/gt/gte/lt/lte/like and CID.and/or. Used by query's .where()
-// and (later) update's/delete's .where().
+// CID.eq/ne/gt/gte/lt/lte/like and CID.every/CID.some. Used by query's
+// .where() and (later) update's/delete's .where().
 //
-// condition map, built via CID.eq/... and CID.and/or
+// condition map, built via CID.eq/... and CID.every/CID.some
 // Return the builder
 _where = function(condition)
         self.condition = condition
