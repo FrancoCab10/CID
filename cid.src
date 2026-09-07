@@ -222,8 +222,10 @@ end function
 
 // Runs an update builder: patches every row matching .condition by merging
 // .data into it (only the given fields change, everything else on the row
-// is untouched), and returns copies of the patched rows. No condition set
-// means every row is patched.
+// is untouched), and returns copies of the patched rows. id is never
+// patched, even if present in .data -- it's fixed at insert and this engine
+// has no foreign-key protection, so a changed id would silently orphan
+// anything referencing it. No condition set means every row is patched.
 //
 // Return list (the patched rows) or string (error message) on failure
 CID._update_execute = function()
@@ -233,6 +235,7 @@ CID._update_execute = function()
         for row in self.db.tables[self.table]
                 if self.condition != null and not CID._eval_condition(row, self.condition) then continue
                 for key in self.data.indexes
+                        if key == "id" then continue
                         row[key] = self.data[key]
                 end for
                 updated.push({} + row)

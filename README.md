@@ -51,7 +51,7 @@ print(item.id)
 
 Starts an update builder for a table. Chain `.set(data)` to choose the fields to change, `.where(condition)` to scope which rows (see the `where(condition)` section under `CID.query` for the condition helpers — same ones), then `.execute()` to run it. Skipping `.where()` updates every row.
 
-This is a PATCH, not a replace: `.set(data)` merges `data` into each matching row, so only the fields you pass change — everything else on the row is left as-is. Returns a list of the patched rows (copies, same as `query()`), or an empty list if nothing matched. `id` isn't protected from being overwritten if you include it in `data` — worth being deliberate about that.
+This is a PATCH, not a replace: `.set(data)` merges `data` into each matching row, so only the fields you pass change — everything else on the row is left as-is. `id` is never patched, even if present in `data` — it's fixed at insert (see `CID.insert`), since this engine has no foreign-key protection and a changed `id` would silently orphan anything referencing it. Returns a list of the patched rows (copies, same as `query()`), or an empty list if nothing matched.
 
 On failure (unknown table, `data` isn't a map) returns a plain string with the error message instead — check `typeof(result) == "string"` to tell them apart.
 

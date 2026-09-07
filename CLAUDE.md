@@ -135,7 +135,13 @@ the user explicitly changes one.
    patches (merges into) every row `.where()` matches, not just one row by
    id specifically.
 7. Queries support `limit` and `offset`.
-8. Writes stay in RAM until `.write()` is called explicitly; a crash before
+8. `id` is immutable once a row is inserted — never settable via
+   `insert().values()` (a fresh `uuid()` always overwrites whatever `id` is
+   passed in) and never patchable via `update().set()` (the `id` key is
+   skipped if present). This engine has no foreign-key protection, so a
+   changed `id` would silently orphan anything referencing it — locked down
+   rather than left to convention.
+9. Writes stay in RAM until `.write()` is called explicitly; a crash before
    that loses unsaved changes since last write. Accepted trade-off, not a bug
    to fix. `insert`/`update`/`delete` never call `write()` themselves either
    — considered and rejected, since `write()` recompiles the whole database
