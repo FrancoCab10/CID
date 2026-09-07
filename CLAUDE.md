@@ -51,7 +51,12 @@ the user explicitly changes one.
   understand, so a raw `.src` copy-pasted straight into the game would hit a
   syntax error. Tried that plus a CI step to transpile it; decided it wasn't
   worth the complexity, so `//` it is, everywhere.
-- Document public functions with a `//` block directly above the function:
+- Every function gets its own `//` block directly above it, even near-
+  identical ones (`CID.eq`/`CID.ne`/`CID.gt`/...) — never share one comment
+  across a cluster of functions. The greybel language server shows this
+  comment as hover documentation per-function; a shared block only
+  documents the first function in the group, and the rest show up as
+  undocumented. Confirmed live in the greybel language server.
 
   ```
   // short explanation

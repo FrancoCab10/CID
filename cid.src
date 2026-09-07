@@ -13,8 +13,7 @@ CID = {}
 // OPERATORS
 // ==================
 
-// Leaf condition builders for where(). Each returns a plain map describing
-// one field comparison; combine them with CID.every/CID.some.
+// Leaf condition: field equals value. Combine with CID.every/CID.some.
 //
 // field string
 // value any
@@ -22,18 +21,50 @@ CID = {}
 CID.eq = function(field, value)
         return {"op": "=", "field": field, "value": value}
 end function
+
+// Leaf condition: field does not equal value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
 CID.ne = function(field, value)
         return {"op": "!=", "field": field, "value": value}
 end function
+
+// Leaf condition: field is greater than value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
 CID.gt = function(field, value)
         return {"op": ">", "field": field, "value": value}
 end function
+
+// Leaf condition: field is greater than or equal to value. Combine with
+// CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
 CID.gte = function(field, value)
         return {"op": ">=", "field": field, "value": value}
 end function
+
+// Leaf condition: field is less than value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
 CID.lt = function(field, value)
         return {"op": "<", "field": field, "value": value}
 end function
+
+// Leaf condition: field is less than or equal to value. Combine with
+// CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
 CID.lte = function(field, value)
         return {"op": "<=", "field": field, "value": value}
 end function
@@ -50,15 +81,22 @@ CID.like = function(field, pattern)
         return {"op": "like", "field": field, "value": pattern}
 end function
 
-// Combinators: build a condition tree out of leaf conditions (or other
-// every/some nodes) for arbitrary and/or nesting. Take a list since
-// GreyScript has no varargs.
+// Combinator: true only if every clause matches (AND). Clauses can be leaf
+// conditions or other every/some nodes, nested arbitrarily deep. Takes a
+// list since GreyScript has no varargs.
 //
 // clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/every/some
 // Return map
 CID.every = function(clauses)
         return {"op": "and", "clauses": clauses}
 end function
+
+// Combinator: true if any clause matches (OR). Clauses can be leaf
+// conditions or other every/some nodes, nested arbitrarily deep. Takes a
+// list since GreyScript has no varargs.
+//
+// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/every/some
+// Return map
 CID.some = function(clauses)
         return {"op": "or", "clauses": clauses}
 end function
