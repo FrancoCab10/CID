@@ -100,7 +100,8 @@ end function
 
 // Leaf condition builder for a case-insensitive match. pattern may use
 // "%" as a wildcard: "%foo", "foo%", "%foo%", or "foo" for an exact match.
-// No escape for a literal "%" in the value; use CID.eq for that.
+// A literal "%" at either edge is written doubled: "20%%" matches the
+// value "20%" exactly, "%%foo" matches a value starting with "%foo".
 //
 // field string
 // pattern string
@@ -129,12 +130,21 @@ end function
 // Return boolean
 _matches_like = function(value, pattern)
         value = value.lower()
-        pattern = pattern.lower()
-        starts_wildcard = pattern.len > 0 and pattern[0] == "%"
-        ends_wildcard = pattern.len > 0 and pattern[-1] == "%"
-        core = pattern
-        if starts_wildcard then core = core[1:]
-        if ends_wildcard and core.len > 0 then core = core[:-1]
+        core = pattern.lower()
+        starts_wildcard = false
+        ends_wildcard = false
+        if core.len >= 2 and core[0:2] == "%%" then
+                core = "%" + core[2:]
+        else if core.len > 0 and core[0] == "%" then
+                starts_wildcard = true
+                core = core[1:]
+        end if
+        if core.len >= 2 and core[-2:] == "%%" then
+                core = core[:-2] + "%"
+        else if core.len > 0 and core[-1] == "%" then
+                ends_wildcard = true
+                core = core[:-1]
+        end if
         if starts_wildcard and ends_wildcard then return value.indexOf(core) != null
         if starts_wildcard then return core.len <= value.len and value[value.len - core.len:] == core
         if ends_wildcard then return core.len <= value.len and value[:core.len] == core

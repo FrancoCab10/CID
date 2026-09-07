@@ -136,7 +136,11 @@ is still to do. Confirmed live: what looked like a `CID.ne`/`CID.every` bug
 was actually this — querying a fresh connect() with no inserts always
 returns nothing, regardless of what's on disk.
 
-Known limitation: `CID.like`'s `%` wildcard has no escape sequence, so a
-value containing a literal `%` (e.g. `"20%"`) can't be matched exactly
-through `like` — the `%` is always read as a wildcard. Use `CID.eq` for
-values that may contain `%`.
+`CID.like`'s `%` wildcard is escaped by doubling: `"20%%"` matches the
+value `"20%"` exactly, rather than being read as a wildcard suffix. Chose
+doubling over a backslash escape (`\%`) since it was unclear whether
+GreyScript string literals would even preserve a bare backslash through
+their own escape processing (`\n` is already interpreted as a real newline
+in this codebase's generated write() source) — doubling only depends on
+the runtime string's characters, not on how the caller's literal was
+parsed. Verified live via `greybel execute`.

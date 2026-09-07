@@ -64,7 +64,7 @@ end for
 Build the condition with the comparison and combinator helpers below, then pass the result to `.where()`. There's no varargs in GreyScript, so `every`/`some` take a list rather than multiple arguments — that's the one place this differs from Drizzle's own syntax.
 
 - `CID.eq(field, value)`, `CID.ne(field, value)`, `CID.gt(field, value)`, `CID.gte(field, value)`, `CID.lt(field, value)`, `CID.lte(field, value)` — leaf comparisons
-- `CID.like(field, pattern)` — case-insensitive match, `%` as wildcard (`"%foo"`, `"foo%"`, `"%foo%"`, or `"foo"` for exact). There's no escape for a literal `%` in the pattern — a value like `"20%"` can't be matched exactly through `like` since the trailing `%` is always read as a wildcard. Use `CID.eq` instead when the value itself may contain `%`.
+- `CID.like(field, pattern)` — case-insensitive match, `%` as wildcard (`"%foo"`, `"foo%"`, `"%foo%"`, or `"foo"` for exact). A literal `%` at either edge is escaped by doubling it: `"20%%"` matches the value `"20%"` exactly, `"%%foo"` matches a value starting with `"%foo"`. Only edge `%`s need escaping — one in the middle of the pattern (e.g. `"%50%off%"`) is already treated as a literal character, since only the first/last character of the pattern is ever read as a wildcard.
 - `CID.every([condition, ...])`, `CID.some([condition, ...])` — combine any number of conditions, and nest them arbitrarily deep
 
 Example Usage:
