@@ -78,7 +78,13 @@ print(removed.len)
 
 ### CID.query(table)
 
-Starts a query builder for a table. Chain `.where(condition)` to filter, then `.execute()` to run it and get back the matching rows — every row if `.where()` is skipped. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table. `orderBy`/`limit`/`offset` are still to come.
+Starts a query builder for a table. Chain `.where(condition)` to filter, `.order_by(field, direction)` to sort, `.offset(n)`/`.limit(n)` to page, then `.execute()` to run it and get back the matching rows. Skipping any of them leaves that step out entirely — no `.where()` matches every row, no `.order_by()` keeps insertion order. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table.
+
+Pipeline order is fixed: filter, then sort, then offset, then limit — same as SQL's `WHERE` → `ORDER BY` → `OFFSET` → `LIMIT`.
+
+- `.order_by(field, direction)` — `direction` is `"asc"` (default) or `"desc"`
+- `.offset(n)` — skip the first `n` matching rows
+- `.limit(n)` — return at most `n` rows
 
 Example Usage:
 
@@ -108,6 +114,14 @@ hosts = hostsDb.query("hosts").where(
                 ])
         ])
 ).execute()
+```
+
+#### order_by(field, direction) / offset(n) / limit(n)
+
+Example Usage — top 3 hosts by uptime, skipping the first one:
+
+```
+hosts = hostsDb.query("hosts").order_by("uptime", "desc").offset(1).limit(3).execute()
 ```
 
 ### CID.write()
