@@ -1,26 +1,22 @@
-/*
-* CID (Central Intelligence Database)
-* version: 0.1.0
-* author: R34lQu1ck'
-*
-* A GreyScript database library for Grey Hack.
-* repository: https://github.com/FrancoCab10/CID
-*
-* Import with: import_code("/path/to/cid.src")
-*/
+// CID (Central Intelligence Database)
+// version: 0.1.0
+// author: R34lQu1ck'
+//
+// A GreyScript database library for Grey Hack.
+// repository: https://github.com/FrancoCab10/CID
+//
+// Import with: import_code("/path/to/cid.src")
 
 CID = {}
 
-/*
-* Creates a new, independent CID instance. Every call returns its own
-* instance, so multiple databases can coexist in the same script.
-*
-* db_name string, database name, used as the file name
-* db_password string, password required to open the compiled binary
-* db_tables list, table names to initialize
-* db_path string, directory to store the database in. Defaults to /root
-* Return CID
-*/
+// Creates a new, independent CID instance. Every call returns its own
+// instance, so multiple databases can coexist in the same script.
+//
+// db_name string, database name, used as the file name
+// db_password string, password required to open the compiled binary
+// db_tables list, table names to initialize
+// db_path string, directory to store the database in. Defaults to /root
+// Return CID
 CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], db_path="")
         instance = new CID
         instance.name = db_name
@@ -37,26 +33,22 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         return instance
 end function
 
-/*
-* Shared builder step: sets the data payload. Used by insert's
-* .values() and (later) update's .set().
-*
-* data map
-* Return the builder
-*/
+// Shared builder step: sets the data payload. Used by insert's
+// .values() and (later) update's .set().
+//
+// data map
+// Return the builder
 _values = function(data)
         self.data = data
         return self
 end function
 
-/*
-* Runs an insert builder: stores a copy of .data with a fresh uuid
-* assigned to its id field, overwriting any id the caller set. Returns
-* a separate copy of that row, so modifying it doesn't change the
-* stored table without going through update().
-*
-* Return map (the inserted row) or string (error message) on failure
-*/
+// Runs an insert builder: stores a copy of .data with a fresh uuid
+// assigned to its id field, overwriting any id the caller set. Returns
+// a separate copy of that row, so modifying it doesn't change the
+// stored table without going through update().
+//
+// Return map (the inserted row) or string (error message) on failure
 _insert_execute = function()
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         if typeof(self.data) != "map" then return "data must be a map"
@@ -66,13 +58,11 @@ _insert_execute = function()
         return {} + row
 end function
 
-/*
-* Starts an insert builder for a table. Chain .values(data) then
-* .execute() to run it.
-*
-* table string, name of the table to insert into
-* Return map, the insert builder
-*/
+// Starts an insert builder for a table. Chain .values(data) then
+// .execute() to run it.
+//
+// table string, name of the table to insert into
+// Return map, the insert builder
 CID.insert = function(table)
         builder = {}
         builder.db = self
@@ -83,13 +73,11 @@ CID.insert = function(table)
         return builder
 end function
 
-/*
-* Runs a query builder: returns a copy of the table's rows (fresh list,
-* fresh row maps), so nothing in the result shares state with the
-* stored table.
-*
-* Return list (the table's rows) or string (error message) on failure
-*/
+// Runs a query builder: returns a copy of the table's rows (fresh list,
+// fresh row maps), so nothing in the result shares state with the
+// stored table.
+//
+// Return list (the table's rows) or string (error message) on failure
 _query_execute = function()
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         rows = []
@@ -99,13 +87,11 @@ _query_execute = function()
         return rows
 end function
 
-/*
-* Starts a query builder for a table. Chain .execute() to run it.
-* No filters yet — returns the whole table.
-*
-* table string, name of the table to query
-* Return map, the query builder
-*/
+// Starts a query builder for a table. Chain .execute() to run it.
+// No filters yet — returns the whole table.
+//
+// table string, name of the table to query
+// Return map, the query builder
 CID.query = function(table)
         builder = {}
         builder.db = self
@@ -114,13 +100,11 @@ CID.query = function(table)
         return builder
 end function
 
-/*
-* Compiles the in-memory tables into the binary database at self.path,
-* replacing any existing file there. The compiled binary only unlocks
-* its data when launched with the correct password.
-*
-* Return 1 (success) or string (error message) on failure
-*/
+// Compiles the in-memory tables into the binary database at self.path,
+// replacing any existing file there. The compiled binary only unlocks
+// its data when launched with the correct password.
+//
+// Return 1 (success) or string (error message) on failure
 CID.write = function()
         staging_dir = self.folder
         staging_name = md5(rnd() + current_date)[0:6]

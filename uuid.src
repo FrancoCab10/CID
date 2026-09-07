@@ -1,20 +1,16 @@
-/*
-* Generate a random 4-bit hex digit
-*
-* Retung string
-*/
+// Generate a random 4-bit hex digit
+//
+// Retung string
 _rand_hex_digit = function
 	n = floor(rnd * 16)
 	hex = "0123456789abcdef"
 	return hex[n]
 end function
 
-/*
-* Generate a random n-character hex block
-* 
-* len: int - the length of the hex block
-* Return string
-*/
+// Generate a random n-character hex block
+//
+// len: int - the length of the hex block
+// Return string
 _rand_hex_block = function(len)
 	s = ""
 	for i in range(0, len - 1)
@@ -23,11 +19,9 @@ _rand_hex_block = function(len)
 	return s
 end function
 
-/*
-* Generate a full uuid-v4 like string
-*
-* Return string
-*/
+// Generate a full uuid-v4 like string
+//
+// Return string
 uuid = function()
 	part1 = _rand_hex_block(8)
 	part2 = _rand_hex_block(4)
