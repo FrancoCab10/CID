@@ -80,6 +80,8 @@ print(removed.len)
 
 Starts a query builder for a table. Chain `.where(condition)` to filter, `.order_by(field, direction)` to sort, `.offset(n)`/`.limit(n)` to page, then `.execute()` to run it and get back the matching rows. Skipping any of them leaves that step out entirely — no `.where()` matches every row, no `.order_by()` keeps insertion order. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table.
 
+Use `.first()` instead of `.execute()` to get back a single row instead of a list — same pipeline, but returns just the first matching row, or `null` if nothing matched, so callers don't need to check the list's length before indexing into it. On failure it returns the error string unchanged, same as `.execute()`.
+
 Pipeline order is fixed: filter, then sort, then offset, then limit — same as SQL's `WHERE` → `ORDER BY` → `OFFSET` → `LIMIT`.
 
 - `.order_by(field, direction)` — `direction` is `"asc"` (default) or `"desc"`

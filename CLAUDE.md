@@ -167,7 +167,9 @@ PATCH semantics — merges into matching rows, doesn't replace them),
 deleted rows), `CID.query(table)` (builder:
 `.where(condition).order_by(field, direction).offset(n).limit(n).execute()`,
 with `CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, `where`
-shared by `update`/`delete` too), `CID.write()`, and `CID.read()`
+shared by `update`/`delete` too; `.first()` runs the same pipeline as
+`.execute()` and returns a single row, `null` if nothing matched, or the
+error string unchanged on failure), `CID.write()`, and `CID.read()`
 (reloads `self.tables` from the compiled binary via `get_shell.launch()` +
 `get_custom_object`, same mechanism the old `BinDB.read()` used; `connect()`
 calls it once automatically). `uuid.src` is in the repo and provides the

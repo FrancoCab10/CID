@@ -308,6 +308,19 @@ CID._delete_execute = function()
         return deleted
 end function
 
+// Runs a query builder the same way .execute() does, but returns only the
+// first matching row instead of a list -- lets callers skip checking the
+// result's length before indexing into it.
+//
+// Return map (the first matching row), null (no rows matched), or string
+// (error message) on failure
+CID._query_first = function()
+        rows = self.execute()
+        if typeof(rows) == "string" then return rows
+        if rows.len == 0 then return null
+        return rows[0]
+end function
+
 // ==================
 // QUERY BUILDERS
 // ==================
@@ -402,7 +415,9 @@ end function
 
 // Starts a query builder for a table. Chain .where(condition),
 // .order_by(field, direction), .offset(n), .limit(n) as needed, then
-// .execute() to run it. Skipping any of them leaves that step out.
+// .execute() to run it. Skipping any of them leaves that step out. Use
+// .first() instead of .execute() to get back a single row (or null)
+// rather than a list.
 //
 // table string, name of the table to query
 // Return map, the query builder
@@ -420,6 +435,7 @@ CID.query = function(table)
         builder.offset = @CID["_offset"]
         builder.limit = @CID["_limit"]
         builder.execute = @CID["_query_execute"]
+        builder.first = @CID["_query_first"]
         return builder
 end function
 
