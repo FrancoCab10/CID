@@ -9,69 +9,9 @@
 
 CID = {}
 
-// Creates a new, independent CID instance. Every call returns its own
-// instance, so multiple databases can coexist in the same script.
-//
-// db_name string, database name, used as the file name
-// db_password string, password required to open the compiled binary
-// db_tables list, table names to initialize
-// db_path string, directory to store the database in. Defaults to /root
-// Return CID
-CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], db_path="")
-        instance = new CID
-        instance.name = db_name
-        instance.password = db_password
-        instance.db_tables = db_tables
-        if db_path == "" then db_path = "/root"
-        instance.path = db_path + "/" + instance.name + ".db"
-        instance.path = instance.path.replace("//", "/")
-        instance.folder = instance.path.split("/")[0:-1].join("/")
-        instance.tables = {}
-        for table_name in instance.db_tables
-                instance.tables[table_name] = []
-        end for
-        return instance
-end function
-
-// Shared builder step: sets the data payload. Used by insert's
-// .values() and (later) update's .set().
-//
-// data map
-// Return the builder
-_values = function(data)
-        self.data = data
-        return self
-end function
-
-// Runs an insert builder: stores a copy of .data with a fresh uuid
-// assigned to its id field, overwriting any id the caller set. Returns
-// a separate copy of that row, so modifying it doesn't change the
-// stored table without going through update().
-//
-// Return map (the inserted row) or string (error message) on failure
-_insert_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
-        if typeof(self.data) != "map" then return "data must be a map"
-        row = {} + self.data
-        row.id = uuid()
-        self.db.tables[self.table].push(row)
-        return {} + row
-end function
-
-// Starts an insert builder for a table. Chain .values(data) then
-// .execute() to run it.
-//
-// table string, name of the table to insert into
-// Return map, the insert builder
-CID.insert = function(table)
-        builder = {}
-        builder.db = self
-        builder.table = table
-        builder.data = null
-        builder.values = @_values
-        builder.execute = @_insert_execute
-        return builder
-end function
+// ==================
+// OPERATORS
+// ==================
 
 // Leaf condition builders for where(). Each returns a plain map describing
 // one field comparison; combine them with CID.every/CID.some.
@@ -121,6 +61,20 @@ CID.every = function(clauses)
 end function
 CID.some = function(clauses)
         return {"op": "or", "clauses": clauses}
+end function
+
+// ==================
+// HELPERS
+// ==================
+
+// Shared builder step: sets the data payload. Used by insert's
+// .values() and (later) update's .set().
+//
+// data map
+// Return the builder
+_values = function(data)
+        self.data = data
+        return self
 end function
 
 // Matches value against a "%"-wildcard pattern, case-insensitive.
@@ -192,6 +146,64 @@ end function
 _where = function(condition)
         self.condition = condition
         return self
+end function
+
+// ==================
+// QUERY BUILDERS
+// ==================
+
+// Creates a new, independent CID instance. Every call returns its own
+// instance, so multiple databases can coexist in the same script.
+//
+// db_name string, database name, used as the file name
+// db_password string, password required to open the compiled binary
+// db_tables list, table names to initialize
+// db_path string, directory to store the database in. Defaults to /root
+// Return CID
+CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], db_path="")
+        instance = new CID
+        instance.name = db_name
+        instance.password = db_password
+        instance.db_tables = db_tables
+        if db_path == "" then db_path = "/root"
+        instance.path = db_path + "/" + instance.name + ".db"
+        instance.path = instance.path.replace("//", "/")
+        instance.folder = instance.path.split("/")[0:-1].join("/")
+        instance.tables = {}
+        for table_name in instance.db_tables
+                instance.tables[table_name] = []
+        end for
+        return instance
+end function
+
+// Runs an insert builder: stores a copy of .data with a fresh uuid
+// assigned to its id field, overwriting any id the caller set. Returns
+// a separate copy of that row, so modifying it doesn't change the
+// stored table without going through update().
+//
+// Return map (the inserted row) or string (error message) on failure
+_insert_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        if typeof(self.data) != "map" then return "data must be a map"
+        row = {} + self.data
+        row.id = uuid()
+        self.db.tables[self.table].push(row)
+        return {} + row
+end function
+
+// Starts an insert builder for a table. Chain .values(data) then
+// .execute() to run it.
+//
+// table string, name of the table to insert into
+// Return map, the insert builder
+CID.insert = function(table)
+        builder = {}
+        builder.db = self
+        builder.table = table
+        builder.data = null
+        builder.values = @_values
+        builder.execute = @_insert_execute
+        return builder
 end function
 
 // Runs a query builder: returns a copy of the rows matching .condition
