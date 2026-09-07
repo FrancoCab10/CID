@@ -27,6 +27,8 @@ import_code("/absolute/path/of/cid.src")
 
 Creates and returns a new, independent database instance. Every call returns its own instance, so a project can split its data across multiple databases (e.g. `loot.db`, `config.db`, `libs.db`) at the same time. `dbPath` defaults to `/root` when omitted.
 
+If a `.db` file already exists at the resolved path, its data is loaded back automatically (see `CID.read()`) — otherwise the instance starts with empty tables.
+
 Example Usage:
 
 ```
@@ -121,4 +123,16 @@ Example Usage:
 ```
 lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execute()
 lootDb.write()
+```
+
+### CID.read()
+
+Reloads `self.tables` from the compiled binary at the configured path, if one exists there — overwriting the in-memory tables with whatever was last written, discarding any unwritten changes. `CID.connect()` already calls this once for you, so you don't need it on a fresh connection; call it again yourself later to pick up changes another script wrote to the same file while your database instance was already open.
+
+If no file exists at the path yet, this just resets `self.tables` to empty for each declared table — that's also what makes a fresh `connect()` start empty.
+
+Example Usage:
+
+```
+lootDb.read()
 ```
