@@ -63,6 +63,8 @@ end for
 
 Compiles the in-memory tables into the binary database at the configured path, replacing any existing file there. The compiled binary only unlocks its data when launched with the correct password; anyone else who tries to run it directly just sees an info message.
 
+`insert`/`update`/`delete` never call this for you — coming from a traditional DB, that's the one counter-intuitive part: `insert()` alone doesn't persist anything, it just updates the in-memory copy. Call `.write()` yourself when you're ready to flush. It's kept explicit because `write()` recompiles the whole database to disk each time; auto-writing on every insert would turn a batch of inserts into that many full recompiles.
+
 Returns `1` on success. On failure (staging file couldn't be created, compilation failed, ...) returns a plain string with the error message instead — check `typeof(result) == "string"` to tell them apart.
 
 Example Usage:

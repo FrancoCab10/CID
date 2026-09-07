@@ -101,7 +101,12 @@ the user explicitly changes one.
 7. Queries support `limit` and `offset`.
 8. Writes stay in RAM until `.write()` is called explicitly; a crash before
    that loses unsaved changes since last write. Accepted trade-off, not a bug
-   to fix.
+   to fix. `insert`/`update`/`delete` never call `write()` themselves either
+   — considered and rejected, since `write()` recompiles the whole database
+   to disk, so auto-writing on every single insert would turn a batch insert
+   into that many full recompiles. Counter-intuitive coming from a
+   traditional DB where insert just persists, but the cost of the
+   alternative is worse.
 
 ## Status
 
