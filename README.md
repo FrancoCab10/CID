@@ -47,6 +47,20 @@ item = lootDb.insert("items").values({"name": "lockpick", "quantity": 3}).execut
 print(item.id)
 ```
 
+### CID.update(table)
+
+Starts an update builder for a table. Chain `.set(data)` to choose the fields to change, `.where(condition)` to scope which rows (see the `where(condition)` section under `CID.query` for the condition helpers — same ones), then `.execute()` to run it. Skipping `.where()` updates every row.
+
+This is a PATCH, not a replace: `.set(data)` merges `data` into each matching row, so only the fields you pass change — everything else on the row is left as-is. Returns a list of the patched rows (copies, same as `query()`), or an empty list if nothing matched. `id` isn't protected from being overwritten if you include it in `data` — worth being deliberate about that.
+
+On failure (unknown table, `data` isn't a map) returns a plain string with the error message instead — check `typeof(result) == "string"` to tell them apart.
+
+Example Usage:
+
+```
+lootDb.update("items").set({"quantity": 5}).where(CID.eq("name", "lockpick")).execute()
+```
+
 ### CID.query(table)
 
 Starts a query builder for a table. Chain `.where(condition)` to filter, then `.execute()` to run it and get back the matching rows — every row if `.where()` is skipped. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table. `orderBy`/`limit`/`offset` are still to come.

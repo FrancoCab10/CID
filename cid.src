@@ -109,8 +109,8 @@ end function
 // scope, and names this short/common are exactly what a consumer's own
 // script might already use.
 
-// Shared builder step: sets the data payload. Used by insert's
-// .values() and (later) update's .set().
+// Shared builder step: sets the data payload. Used by insert's .values()
+// and update's .set().
 //
 // data map
 // Return the builder
@@ -220,6 +220,26 @@ CID._query_execute = function()
         return rows
 end function
 
+// Runs an update builder: patches every row matching .condition by merging
+// .data into it (only the given fields change, everything else on the row
+// is untouched), and returns copies of the patched rows. No condition set
+// means every row is patched.
+//
+// Return list (the patched rows) or string (error message) on failure
+CID._update_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        if typeof(self.data) != "map" then return "data must be a map"
+        updated = []
+        for row in self.db.tables[self.table]
+                if self.condition != null and not CID._eval_condition(row, self.condition) then continue
+                for key in self.data.indexes
+                        row[key] = self.data[key]
+                end for
+                updated.push({} + row)
+        end for
+        return updated
+end function
+
 // ==================
 // QUERY BUILDERS
 // ==================
@@ -260,6 +280,24 @@ CID.insert = function(table)
         builder.data = null
         builder.values = @CID["_values"]
         builder.execute = @CID["_insert_execute"]
+        return builder
+end function
+
+// Starts an update builder for a table. Chain .set(data) and .where(condition)
+// then .execute() to run it. Patches (merges) .data into every matching row
+// instead of replacing it. Skipping .where() patches every row.
+//
+// table string, name of the table to update
+// Return map, the update builder
+CID.update = function(table)
+        builder = {}
+        builder.db = self
+        builder.table = table
+        builder.data = null
+        builder.condition = null
+        builder.set = @CID["_values"]
+        builder.where = @CID["_where"]
+        builder.execute = @CID["_update_execute"]
         return builder
 end function
 
