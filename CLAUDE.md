@@ -174,6 +174,15 @@ can meaningfully check (no file ever exists in a Mock run to launch). Needs
 a live in-game pass: connect(), insert(), write(), then reconnect() in a
 fresh script and confirm the data comes back.
 
+`get_custom_object` is one map shared across every script running in the
+shell, not namespaced per script or per launched program. `write()`/`read()`
+key into it with `CID._KEY_PREFIX + self.path` (`CID._KEY_PREFIX =
+"__cid__"`), not the bare database name — otherwise any unrelated script's
+own use of `get_custom_object` under the same key (e.g. some other feature
+in the same multitool also using `"hosts"` for something unrelated), or a
+second CID database that happens to share a name at a different path, would
+silently collide. Entirely internal — the library user never sees this key.
+
 `CID.like`'s `%` wildcard is escaped by doubling: `"20%%"` matches the
 value `"20%"` exactly, rather than being read as a wildcard suffix. Chose
 doubling over a backslash escape (`\%`) since it was unclear whether
