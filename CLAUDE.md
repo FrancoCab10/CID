@@ -94,8 +94,16 @@ the user explicitly changes one.
 3. Queries always return full row objects — no column projection/select-list
    like real SQL. Same for insert/update: they return the full row, not just
    its id.
-4. `where()` must support composable `and`/`or` conditions (Drizzle-style),
-   not just a flat left-to-right chain.
+4. `where()` supports composable `and`/`or` conditions (Drizzle-style), not
+   just a flat left-to-right chain. Implemented as a condition tree: leaf
+   comparisons (`CID.eq`, `CID.ne`, `CID.gt`, `CID.gte`, `CID.lt`, `CID.lte`,
+   `CID.like`) and combinators (`CID.and`, `CID.or`) are functions namespaced
+   under `CID` — not bare globals like Drizzle's own `eq`/`and`/`or` — since
+   `import_code` dumps everything into the caller's global scope and short
+   names like that are exactly what a consumer's own script is likely to
+   already use. `and`/`or` take a list (no varargs in GreyScript) and can
+   nest arbitrarily deep. A shared `_where`/`_eval_condition` pair backs
+   `.where()` so update/delete can reuse it once they land.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
    relate tables by storing IDs and issuing multiple queries.
 6. `update`/`delete` operate on row IDs (via `uuid.src`), not array index,
@@ -114,10 +122,11 @@ the user explicitly changes one.
 
 Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
 `/root`), `CID.insert(table)` (builder: `.values(data).execute()`),
-`CID.query(table)` (builder: `.execute()`, no filters yet), and
+`CID.query(table)` (builder: `.where(condition).execute()`, with
+`CID.eq/ne/gt/gte/lt/lte/like/and/or` condition builders), and
 `CID.write()`. `uuid.src` is in the repo and provides the global `uuid()`
-function used to assign row ids. `where`/`orderBy`/`limit`/`offset` and
-everything else in the feature decisions above is still pending.
+function used to assign row ids. `orderBy`/`limit`/`offset` and everything
+else in the feature decisions above is still pending.
 
 Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
 back into `self.tables` — every connect() starts from empty tables, even if

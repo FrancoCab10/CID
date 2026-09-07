@@ -73,22 +73,132 @@ CID.insert = function(table)
         return builder
 end function
 
-// Runs a query builder: returns a copy of the table's rows (fresh list,
-// fresh row maps), so nothing in the result shares state with the
-// stored table.
+// Leaf condition builders for where(). Each returns a plain map describing
+// one field comparison; combine them with CID.and/CID.or.
 //
-// Return list (the table's rows) or string (error message) on failure
+// field string
+// value any
+// Return map
+CID.eq = function(field, value)
+        return {"op": "=", "field": field, "value": value}
+end function
+CID.ne = function(field, value)
+        return {"op": "!=", "field": field, "value": value}
+end function
+CID.gt = function(field, value)
+        return {"op": ">", "field": field, "value": value}
+end function
+CID.gte = function(field, value)
+        return {"op": ">=", "field": field, "value": value}
+end function
+CID.lt = function(field, value)
+        return {"op": "<", "field": field, "value": value}
+end function
+CID.lte = function(field, value)
+        return {"op": "<=", "field": field, "value": value}
+end function
+
+// Leaf condition builder for a case-insensitive match. pattern may use
+// "%" as a wildcard: "%foo", "foo%", "%foo%", or "foo" for an exact match.
+//
+// field string
+// pattern string
+// Return map
+CID.like = function(field, pattern)
+        return {"op": "like", "field": field, "value": pattern}
+end function
+
+// Combinators: build a condition tree out of leaf conditions (or other
+// and/or nodes) for arbitrary and/or nesting. Take a list since GreyScript
+// has no varargs.
+//
+// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/and/or
+// Return map
+CID.and = function(clauses)
+        return {"op": "and", "clauses": clauses}
+end function
+CID.or = function(clauses)
+        return {"op": "or", "clauses": clauses}
+end function
+
+// Matches value against a "%"-wildcard pattern, case-insensitive.
+//
+// value string
+// pattern string
+// Return boolean
+_matches_like = function(value, pattern)
+        value = value.lower()
+        pattern = pattern.lower()
+        starts_wildcard = pattern.len > 0 and pattern[0] == "%"
+        ends_wildcard = pattern.len > 0 and pattern[-1] == "%"
+        core = pattern
+        if starts_wildcard then core = core[1:]
+        if ends_wildcard and core.len > 0 then core = core[:-1]
+        if starts_wildcard and ends_wildcard then return value.indexOf(core) != null
+        if starts_wildcard then return core.len <= value.len and value[value.len - core.len:] == core
+        if ends_wildcard then return core.len <= value.len and value[:core.len] == core
+        return value == core
+end function
+
+// Evaluates a condition tree (built via CID.eq/.../CID.and/or) against a
+// row. "and"/"or" nodes recurse over .clauses; leaf nodes compare a field.
+//
+// row map
+// condition map
+// Return boolean
+_eval_condition = function(row, condition)
+        if condition.op == "and" then
+                for clause in condition.clauses
+                        if not _eval_condition(row, clause) then return false
+                end for
+                return true
+        end if
+        if condition.op == "or" then
+                for clause in condition.clauses
+                        if _eval_condition(row, clause) then return true
+                end for
+                return false
+        end if
+        if not row.hasIndex(condition.field) then return false
+        v = row[condition.field]
+        if condition.op == "=" then return v == condition.value
+        if condition.op == "!=" then return v != condition.value
+        if condition.op == ">" then return v > condition.value
+        if condition.op == ">=" then return v >= condition.value
+        if condition.op == "<" then return v < condition.value
+        if condition.op == "<=" then return v <= condition.value
+        if condition.op == "like" then return _matches_like(str(v), condition.value)
+        return false
+end function
+
+// Shared builder step: sets the row-filter condition tree, built with
+// CID.eq/ne/gt/gte/lt/lte/like and CID.and/or. Used by query's .where()
+// and (later) update's/delete's .where().
+//
+// condition map, built via CID.eq/... and CID.and/or
+// Return the builder
+_where = function(condition)
+        self.condition = condition
+        return self
+end function
+
+// Runs a query builder: returns a copy of the rows matching .condition
+// (fresh list, fresh row maps), so nothing in the result shares state
+// with the stored table. No condition set means every row matches.
+//
+// Return list (the matching rows) or string (error message) on failure
 _query_execute = function()
         if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
         rows = []
         for row in self.db.tables[self.table]
+                if self.condition != null and not _eval_condition(row, self.condition) then continue
                 rows.push({} + row)
         end for
         return rows
 end function
 
-// Starts a query builder for a table. Chain .execute() to run it.
-// No filters yet — returns the whole table.
+// Starts a query builder for a table. Chain .where(condition) then
+// .execute() to run it. Skipping .where() matches every row.
 //
 // table string, name of the table to query
 // Return map, the query builder
@@ -96,6 +206,8 @@ CID.query = function(table)
         builder = {}
         builder.db = self
         builder.table = table
+        builder.condition = null
+        builder.where = @_where
         builder.execute = @_query_execute
         return builder
 end function
