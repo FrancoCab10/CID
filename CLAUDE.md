@@ -114,8 +114,9 @@ the user explicitly changes one.
    This replaces one-shot helpers like the old `fetchBy(table, key, value)`,
    so filtering on more than one condition is possible.
 3. Queries always return full row objects — no column projection/select-list
-   like real SQL. Same for insert/update: they return the full row, not just
-   its id.
+   like real SQL. Same for insert/update: they return the full row(s), not
+   just an id or a count. `insert` returns one row (a map); `update` returns
+   every row it patched (a list), since it can match more than one.
 4. `where()` supports composable `and`/`or` conditions (Drizzle-style), not
    just a flat left-to-right chain. Implemented as a condition tree: leaf
    comparisons (`CID.eq`, `CID.ne`, `CID.gt`, `CID.gte`, `CID.lt`, `CID.lte`,
@@ -128,10 +129,19 @@ the user explicitly changes one.
    pair backs `.where()` so update/delete can reuse it once they land.
 5. `join` is explicitly deferred — nice to have, not near-term. Until then,
    relate tables by storing IDs and issuing multiple queries.
-6. `update`/`delete` operate on row IDs (via `uuid.src`), not array index,
-   since array position shifts whenever a row is deleted.
+6. `update`/`delete` operate on whatever `.where()` matches (usually a row
+   ID, via `uuid.src`, but not required to be), not array index, since
+   array position shifts whenever a row is deleted. `update()` does this:
+   patches (merges into) every row `.where()` matches, not just one row by
+   id specifically.
 7. Queries support `limit` and `offset`.
-8. Writes stay in RAM until `.write()` is called explicitly; a crash before
+8. `id` is immutable once a row is inserted — never settable via
+   `insert().values()` (a fresh `uuid()` always overwrites whatever `id` is
+   passed in) and never patchable via `update().set()` (the `id` key is
+   skipped if present). This engine has no foreign-key protection, so a
+   changed `id` would silently orphan anything referencing it — locked down
+   rather than left to convention.
+9. Writes stay in RAM until `.write()` is called explicitly; a crash before
    that loses unsaved changes since last write. Accepted trade-off, not a bug
    to fix. `insert`/`update`/`delete` never call `write()` themselves either
    — considered and rejected, since `write()` recompiles the whole database
@@ -144,11 +154,14 @@ the user explicitly changes one.
 
 Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
 `/root`), `CID.insert(table)` (builder: `.values(data).execute()`),
+`CID.update(table)` (builder: `.set(data).where(condition).execute()`,
+PATCH semantics — merges into matching rows, doesn't replace them),
 `CID.query(table)` (builder: `.where(condition).execute()`, with
-`CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders), and
-`CID.write()`. `uuid.src` is in the repo and provides the global `uuid()`
-function used to assign row ids. `orderBy`/`limit`/`offset` and everything
-else in the feature decisions above is still pending.
+`CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, shared by
+`update`'s `.where()` too), and `CID.write()`. `uuid.src` is in the repo and
+provides the global `uuid()` function used to assign row ids.
+`delete`/`orderBy`/`limit`/`offset` and everything else in the feature
+decisions above is still pending.
 
 Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
 back into `self.tables` — every connect() starts from empty tables, even if
