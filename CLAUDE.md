@@ -132,4 +132,11 @@ Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
 back into `self.tables` — every connect() starts from empty tables, even if
 a database was already written to that path. Reading the compiled binary
 back (the old BinDB.read() did this via get_shell.launch() + get_custom_object)
-is still to do.
+is still to do. Confirmed live: what looked like a `CID.ne`/`CID.every` bug
+was actually this — querying a fresh connect() with no inserts always
+returns nothing, regardless of what's on disk.
+
+Known limitation: `CID.like`'s `%` wildcard has no escape sequence, so a
+value containing a literal `%` (e.g. `"20%"`) can't be matched exactly
+through `like` — the `%` is always read as a wildcard. Use `CID.eq` for
+values that may contain `%`.

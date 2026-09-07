@@ -100,6 +100,7 @@ end function
 
 // Leaf condition builder for a case-insensitive match. pattern may use
 // "%" as a wildcard: "%foo", "foo%", "%foo%", or "foo" for an exact match.
+// No escape for a literal "%" in the value; use CID.eq for that.
 //
 // field string
 // pattern string
