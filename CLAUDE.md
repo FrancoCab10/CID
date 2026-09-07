@@ -87,10 +87,19 @@ the user explicitly changes one.
 ## Workflow
 
 - Build incrementally: smallest useful piece first.
-- Grey Hack's GreyScript runtime has quirks of its own, and there's no local
-  interpreter to test against. Every new addition must be tested live
-  in-game before the next feature builds on top of it — keep PRs scoped to
-  one testable feature at a time.
+- `greybel-js`'s local interpreter (`greybel execute <file> --env-type Mock`)
+  is trustworthy for core language logic — control flow, maps/lists,
+  recursion, string ops — and is the default way to verify a change before
+  pushing. Divergence from real Grey Hack is rare and mainly shows up in
+  Grey Hack-specific objects (`get_shell`, `host_computer`, `File`, `build`,
+  ...) that can shift between game updates — that's what still needs live
+  in-game confirmation, not every change.
+- One exception hit already: `@CID._values` (dotted) ran fine under Mock but
+  didn't behave the same in-game as `@CID["_values"]` (bracket) — logged
+  here, not as a reason to distrust `@` in general, just as the one known
+  case where Mock and in-game disagreed on something that wasn't a Grey
+  Hack-specific object.
+- Keep PRs scoped to one testable feature at a time.
 
 ## Feature decisions
 
