@@ -38,27 +38,29 @@ the user explicitly changes one.
 
 ## Comments
 
-- Document public functions with a `/* */` block comment directly above the
-  function:
+- `//` only. There's no block comment syntax in this project — `/* */` is a
+  greybel-only extension that Grey Hack's in-game code editor doesn't
+  understand, so a raw `.src` copy-pasted straight into the game would hit a
+  syntax error. Tried that plus a CI step to transpile it; decided it wasn't
+  worth the complexity, so `//` it is, everywhere.
+- Document public functions with a `//` block directly above the function:
 
   ```
-  /*
-  * short explanation
-  *
-  * param_name type
-  * param_name type
-  * Return type
-  *
-  * some examples if needed
-  */
+  // short explanation
+  //
+  // param_name type
+  // param_name type
+  // Return type
+  //
+  // some examples if needed
   ```
 
 - Keep it brief and factual — no verbose prose, no inline "example output"
   transcripts (Grey Hack enforces a per-file character limit; full examples
   belong in the README/demo file, not `cid.src`).
 - Don't comment what the code already says.
-- `//` single-line comments are fine but rare — only when something
-  genuinely needs clarifying, and explain the *why*, not the *what*.
+- A single `//` line is fine but rare — only when something genuinely needs
+  clarifying, and explain the *why*, not the *what*.
 
 ## Error handling
 
