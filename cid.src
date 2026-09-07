@@ -9,6 +9,221 @@
 
 CID = {}
 
+// ==================
+// OPERATORS
+// ==================
+
+// Leaf condition: field equals value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.eq = function(field, value)
+        return {"op": "=", "field": field, "value": value}
+end function
+
+// Leaf condition: field does not equal value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.ne = function(field, value)
+        return {"op": "!=", "field": field, "value": value}
+end function
+
+// Leaf condition: field is greater than value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.gt = function(field, value)
+        return {"op": ">", "field": field, "value": value}
+end function
+
+// Leaf condition: field is greater than or equal to value. Combine with
+// CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.gte = function(field, value)
+        return {"op": ">=", "field": field, "value": value}
+end function
+
+// Leaf condition: field is less than value. Combine with CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.lt = function(field, value)
+        return {"op": "<", "field": field, "value": value}
+end function
+
+// Leaf condition: field is less than or equal to value. Combine with
+// CID.every/CID.some.
+//
+// field string
+// value any
+// Return map
+CID.lte = function(field, value)
+        return {"op": "<=", "field": field, "value": value}
+end function
+
+// Leaf condition builder for a case-insensitive match. pattern may use
+// "%" as a wildcard: "%foo", "foo%", "%foo%", or "foo" for an exact match.
+// A literal "%" at either edge is written doubled: "20%%" matches the
+// value "20%" exactly, "%%foo" matches a value starting with "%foo".
+//
+// field string
+// pattern string
+// Return map
+CID.like = function(field, pattern)
+        return {"op": "like", "field": field, "value": pattern}
+end function
+
+// Combinator: true only if every clause matches (AND). Clauses can be leaf
+// conditions or other every/some nodes, nested arbitrarily deep. Takes a
+// list since GreyScript has no varargs.
+//
+// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/every/some
+// Return map
+CID.every = function(clauses)
+        return {"op": "and", "clauses": clauses}
+end function
+
+// Combinator: true if any clause matches (OR). Clauses can be leaf
+// conditions or other every/some nodes, nested arbitrarily deep. Takes a
+// list since GreyScript has no varargs.
+//
+// clauses list, of conditions built via CID.eq/ne/gt/gte/lt/lte/like/every/some
+// Return map
+CID.some = function(clauses)
+        return {"op": "or", "clauses": clauses}
+end function
+
+// ==================
+// HELPERS
+// ==================
+// Namespaced under CID (not bare globals) for the same reason as the
+// operators above: import_code dumps everything into the caller's global
+// scope, and names this short/common are exactly what a consumer's own
+// script might already use.
+
+// Shared builder step: sets the data payload. Used by insert's
+// .values() and (later) update's .set().
+//
+// data map
+// Return the builder
+CID._values = function(data)
+        self.data = data
+        return self
+end function
+
+// Matches value against a "%"-wildcard pattern, case-insensitive.
+//
+// value string
+// pattern string
+// Return boolean
+CID._matches_like = function(value, pattern)
+        value = value.lower()
+        core = pattern.lower()
+        starts_wildcard = false
+        ends_wildcard = false
+        if core.len >= 2 and core[0:2] == "%%" then
+                core = "%" + core[2:]
+        else if core.len > 0 and core[0] == "%" then
+                starts_wildcard = true
+                core = core[1:]
+        end if
+        if core.len >= 2 and core[-2:] == "%%" then
+                core = core[:-2] + "%"
+        else if core.len > 0 and core[-1] == "%" then
+                ends_wildcard = true
+                core = core[:-1]
+        end if
+        if starts_wildcard and ends_wildcard then return value.indexOf(core) != null
+        if starts_wildcard then return core.len <= value.len and value[value.len - core.len:] == core
+        if ends_wildcard then return core.len <= value.len and value[:core.len] == core
+        return value == core
+end function
+
+// Evaluates a condition tree (built via CID.eq/.../CID.every/CID.some)
+// against a row. "and"/"or" nodes recurse over .clauses; leaf nodes
+// compare a field.
+//
+// row map
+// condition map
+// Return boolean
+CID._eval_condition = function(row, condition)
+        if condition.op == "and" then
+                for clause in condition.clauses
+                        if not CID._eval_condition(row, clause) then return false
+                end for
+                return true
+        end if
+        if condition.op == "or" then
+                for clause in condition.clauses
+                        if CID._eval_condition(row, clause) then return true
+                end for
+                return false
+        end if
+        if not row.hasIndex(condition.field) then return false
+        v = row[condition.field]
+        if condition.op == "=" then return v == condition.value
+        if condition.op == "!=" then return v != condition.value
+        if condition.op == ">" then return v > condition.value
+        if condition.op == ">=" then return v >= condition.value
+        if condition.op == "<" then return v < condition.value
+        if condition.op == "<=" then return v <= condition.value
+        if condition.op == "like" then return CID._matches_like(str(v), condition.value)
+        return false
+end function
+
+// Shared builder step: sets the row-filter condition tree, built with
+// CID.eq/ne/gt/gte/lt/lte/like and CID.every/CID.some. Used by query's
+// .where() and (later) update's/delete's .where().
+//
+// condition map, built via CID.eq/... and CID.every/CID.some
+// Return the builder
+CID._where = function(condition)
+        self.condition = condition
+        return self
+end function
+
+// Runs an insert builder: stores a copy of .data with a fresh uuid
+// assigned to its id field, overwriting any id the caller set. Returns
+// a separate copy of that row, so modifying it doesn't change the
+// stored table without going through update().
+//
+// Return map (the inserted row) or string (error message) on failure
+CID._insert_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        if typeof(self.data) != "map" then return "data must be a map"
+        row = {} + self.data
+        row.id = uuid()
+        self.db.tables[self.table].push(row)
+        return {} + row
+end function
+
+// Runs a query builder: returns a copy of the rows matching .condition
+// (fresh list, fresh row maps), so nothing in the result shares state
+// with the stored table. No condition set means every row matches.
+//
+// Return list (the matching rows) or string (error message) on failure
+CID._query_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        rows = []
+        for row in self.db.tables[self.table]
+                if self.condition != null and not CID._eval_condition(row, self.condition) then continue
+                rows.push({} + row)
+        end for
+        return rows
+end function
+
+// ==================
+// QUERY BUILDERS
+// ==================
+
 // Creates a new, independent CID instance. Every call returns its own
 // instance, so multiple databases can coexist in the same script.
 //
@@ -33,31 +248,6 @@ CID.connect = function(db_name="CID", db_password="admin", db_tables=["table"], 
         return instance
 end function
 
-// Shared builder step: sets the data payload. Used by insert's
-// .values() and (later) update's .set().
-//
-// data map
-// Return the builder
-_values = function(data)
-        self.data = data
-        return self
-end function
-
-// Runs an insert builder: stores a copy of .data with a fresh uuid
-// assigned to its id field, overwriting any id the caller set. Returns
-// a separate copy of that row, so modifying it doesn't change the
-// stored table without going through update().
-//
-// Return map (the inserted row) or string (error message) on failure
-_insert_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
-        if typeof(self.data) != "map" then return "data must be a map"
-        row = {} + self.data
-        row.id = uuid()
-        self.db.tables[self.table].push(row)
-        return {} + row
-end function
-
 // Starts an insert builder for a table. Chain .values(data) then
 // .execute() to run it.
 //
@@ -68,27 +258,13 @@ CID.insert = function(table)
         builder.db = self
         builder.table = table
         builder.data = null
-        builder.values = @_values
-        builder.execute = @_insert_execute
+        builder.values = @CID["_values"]
+        builder.execute = @CID["_insert_execute"]
         return builder
 end function
 
-// Runs a query builder: returns a copy of the table's rows (fresh list,
-// fresh row maps), so nothing in the result shares state with the
-// stored table.
-//
-// Return list (the table's rows) or string (error message) on failure
-_query_execute = function()
-        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
-        rows = []
-        for row in self.db.tables[self.table]
-                rows.push({} + row)
-        end for
-        return rows
-end function
-
-// Starts a query builder for a table. Chain .execute() to run it.
-// No filters yet — returns the whole table.
+// Starts a query builder for a table. Chain .where(condition) then
+// .execute() to run it. Skipping .where() matches every row.
 //
 // table string, name of the table to query
 // Return map, the query builder
@@ -96,7 +272,9 @@ CID.query = function(table)
         builder = {}
         builder.db = self
         builder.table = table
-        builder.execute = @_query_execute
+        builder.condition = null
+        builder.where = @CID["_where"]
+        builder.execute = @CID["_query_execute"]
         return builder
 end function
 

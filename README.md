@@ -49,7 +49,7 @@ print(item.id)
 
 ### CID.query(table)
 
-Starts a query builder for a table. Chain `.execute()` to run it and get back the table's rows. No filters yet (`where`/`orderBy`/`limit`/`offset` are still to come) — it returns the whole table, as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table.
+Starts a query builder for a table. Chain `.where(condition)` to filter, then `.execute()` to run it and get back the matching rows — every row if `.where()` is skipped. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table. `orderBy`/`limit`/`offset` are still to come.
 
 Example Usage:
 
@@ -57,6 +57,28 @@ Example Usage:
 for item in lootDb.query("items").execute()
         print(item.name)
 end for
+```
+
+#### where(condition)
+
+Build the condition with the comparison and combinator helpers below, then pass the result to `.where()`. There's no varargs in GreyScript, so `every`/`some` take a list rather than multiple arguments — that's the one place this differs from Drizzle's own syntax.
+
+- `CID.eq(field, value)`, `CID.ne(field, value)`, `CID.gt(field, value)`, `CID.gte(field, value)`, `CID.lt(field, value)`, `CID.lte(field, value)` — leaf comparisons
+- `CID.like(field, pattern)` — case-insensitive match, `%` as wildcard (`"%foo"`, `"foo%"`, `"%foo%"`, or `"foo"` for exact). A literal `%` at either edge is escaped by doubling it: `"20%%"` matches the value `"20%"` exactly, `"%%foo"` matches a value starting with `"%foo"`. Only edge `%`s need escaping — one in the middle of the pattern (e.g. `"%50%off%"`) is already treated as a literal character, since only the first/last character of the pattern is ever read as a wildcard.
+- `CID.every([condition, ...])`, `CID.some([condition, ...])` — combine any number of conditions, and nest them arbitrarily deep
+
+Example Usage:
+
+```
+hosts = hostsDb.query("hosts").where(
+        CID.every([
+                CID.eq("public_ip", "200.43.192.35"),
+                CID.some([
+                        CID.eq("local_ip", "192.168.0.5"),
+                        CID.eq("local_ip", "192.168.0.10")
+                ])
+        ])
+).execute()
 ```
 
 ### CID.write()
