@@ -61,6 +61,19 @@ Example Usage:
 lootDb.update("items").set({"quantity": 5}).where(CID.eq("name", "lockpick")).execute()
 ```
 
+### CID.delete(table)
+
+Starts a delete builder for a table. Chain `.where(condition)` to scope which rows (same condition helpers as `CID.query`/`CID.update`), then `.execute()` to run it. Skipping `.where()` deletes every row.
+
+Returns a list of the deleted rows (copies), or an empty list if nothing matched. On failure (unknown table) returns a plain string with the error message instead — check `typeof(result) == "string"` to tell them apart.
+
+Example Usage:
+
+```
+removed = lootDb.delete("items").where(CID.eq("name", "lockpick")).execute()
+print(removed.len)
+```
+
 ### CID.query(table)
 
 Starts a query builder for a table. Chain `.where(condition)` to filter, then `.execute()` to run it and get back the matching rows — every row if `.where()` is skipped. Rows come back as copies (fresh list, fresh row maps) so nothing in the result shares state with the stored table. `orderBy`/`limit`/`offset` are still to come.

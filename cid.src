@@ -243,6 +243,26 @@ CID._update_execute = function()
         return updated
 end function
 
+// Runs a delete builder: removes every row matching .condition from the
+// table and returns copies of the removed rows. No condition set means
+// every row is removed.
+//
+// Return list (the deleted rows) or string (error message) on failure
+CID._delete_execute = function()
+        if not self.db.tables.hasIndex(self.table) then return "Table " + self.table + " not found"
+        deleted = []
+        kept = []
+        for row in self.db.tables[self.table]
+                if self.condition != null and not CID._eval_condition(row, self.condition) then
+                        kept.push(row)
+                else
+                        deleted.push({} + row)
+                end if
+        end for
+        self.db.tables[self.table] = kept
+        return deleted
+end function
+
 // ==================
 // QUERY BUILDERS
 // ==================
@@ -301,6 +321,21 @@ CID.update = function(table)
         builder.set = @CID["_values"]
         builder.where = @CID["_where"]
         builder.execute = @CID["_update_execute"]
+        return builder
+end function
+
+// Starts a delete builder for a table. Chain .where(condition) then
+// .execute() to run it. Skipping .where() deletes every row.
+//
+// table string, name of the table to delete from
+// Return map, the delete builder
+CID.delete = function(table)
+        builder = {}
+        builder.db = self
+        builder.table = table
+        builder.condition = null
+        builder.where = @CID["_where"]
+        builder.execute = @CID["_delete_execute"]
         return builder
 end function
 

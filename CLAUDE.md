@@ -114,9 +114,10 @@ the user explicitly changes one.
    This replaces one-shot helpers like the old `fetchBy(table, key, value)`,
    so filtering on more than one condition is possible.
 3. Queries always return full row objects — no column projection/select-list
-   like real SQL. Same for insert/update: they return the full row(s), not
-   just an id or a count. `insert` returns one row (a map); `update` returns
-   every row it patched (a list), since it can match more than one.
+   like real SQL. Same for insert/update/delete: they return the full
+   row(s), not just an id or a count. `insert` returns one row (a map);
+   `update`/`delete` return every row they affected (a list), since either
+   can match more than one.
 4. `where()` supports composable `and`/`or` conditions (Drizzle-style), not
    just a flat left-to-right chain. Implemented as a condition tree: leaf
    comparisons (`CID.eq`, `CID.ne`, `CID.gt`, `CID.gte`, `CID.lt`, `CID.lte`,
@@ -131,9 +132,9 @@ the user explicitly changes one.
    relate tables by storing IDs and issuing multiple queries.
 6. `update`/`delete` operate on whatever `.where()` matches (usually a row
    ID, via `uuid.src`, but not required to be), not array index, since
-   array position shifts whenever a row is deleted. `update()` does this:
-   patches (merges into) every row `.where()` matches, not just one row by
-   id specifically.
+   array position shifts whenever a row is deleted. Both act on every
+   matching row, not just one by id specifically: `update()` patches
+   (merges into) each match, `delete()` removes each match.
 7. Queries support `limit` and `offset`.
 8. `id` is immutable once a row is inserted — never settable via
    `insert().values()` (a fresh `uuid()` always overwrites whatever `id` is
@@ -156,12 +157,13 @@ Implemented so far, in `cid.src`: `CID.connect()` (default `db_path` is
 `/root`), `CID.insert(table)` (builder: `.values(data).execute()`),
 `CID.update(table)` (builder: `.set(data).where(condition).execute()`,
 PATCH semantics — merges into matching rows, doesn't replace them),
-`CID.query(table)` (builder: `.where(condition).execute()`, with
-`CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, shared by
-`update`'s `.where()` too), and `CID.write()`. `uuid.src` is in the repo and
-provides the global `uuid()` function used to assign row ids.
-`delete`/`orderBy`/`limit`/`offset` and everything else in the feature
-decisions above is still pending.
+`CID.delete(table)` (builder: `.where(condition).execute()`, returns the
+deleted rows), `CID.query(table)` (builder: `.where(condition).execute()`,
+with `CID.eq/ne/gt/gte/lt/lte/like/every/some` condition builders, shared by
+`update`/`delete`'s `.where()` too), and `CID.write()`. `uuid.src` is in the
+repo and provides the global `uuid()` function used to assign row ids.
+`orderBy`/`limit`/`offset` and everything else in the feature decisions
+above is still pending — CRUD is otherwise complete.
 
 Known gap: `CID.connect()` doesn't yet load an existing `.db` file's data
 back into `self.tables` — every connect() starts from empty tables, even if
